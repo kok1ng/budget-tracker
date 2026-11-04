@@ -10,6 +10,7 @@ const validAccount: Account = {
   openingBalanceMinor: 150000,
   createdAt: '2026-11-04T10:00:00.000Z',
   updatedAt: '2026-11-04T10:00:00.000Z',
+  archivedAt: null
 }
 
 describe('isValidAccount', () => {
@@ -71,4 +72,35 @@ describe('isValidAccount', () => {
       }),
     ).toBe(false)
   })
+
+  it('accepts an active account with archivedAt set to null', () => {
+  expect(isValidAccount(validAccount)).toBe(true)
+})
+
+it('accepts an archived account with a valid timestamp', () => {
+  const archivedAccount = {
+    ...validAccount,
+    archivedAt: '2026-11-04T12:00:00.000Z',
+  }
+
+  expect(isValidAccount(archivedAccount)).toBe(true)
+})
+
+it('rejects an account with an invalid archivedAt timestamp', () => {
+  const invalidAccount = {
+    ...validAccount,
+    archivedAt: 'not-a-date',
+  }
+
+  expect(isValidAccount(invalidAccount)).toBe(false)
+})
+
+it('rejects an account with an unsupported archivedAt type', () => {
+  const invalidAccount = {
+    ...validAccount,
+    archivedAt: 123,
+  }
+
+  expect(isValidAccount(invalidAccount)).toBe(false)
+})
 })

@@ -14,6 +14,10 @@ export function isTransactionContextValid(
     return false
   }
 
+  if (sourceAccount.archivedAt !== null) {
+  return false
+}
+
   if (sourceAccount.currency !== transaction.currency) {
     return false
   }
@@ -33,6 +37,10 @@ export function isTransactionContextValid(
     if (!destinationAccount) {
       return false
     }
+
+    if (destinationAccount.archivedAt !== null) {
+  return false
+}
 
     if (destinationAccount.id === sourceAccount.id) {
       return false

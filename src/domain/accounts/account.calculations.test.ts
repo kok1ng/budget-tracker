@@ -14,6 +14,7 @@ const mainAccount: Account = {
   openingBalanceMinor: 100000,
   createdAt: '2026-11-04T10:00:00.000Z',
   updatedAt: '2026-11-04T10:00:00.000Z',
+  archivedAt: null
 }
 
 const savingsAccount: Account = {
@@ -24,6 +25,7 @@ const savingsAccount: Account = {
   openingBalanceMinor: 200000,
   createdAt: '2026-11-04T10:00:00.000Z',
   updatedAt: '2026-11-04T10:00:00.000Z',
+  archivedAt: null
 }
 
 const transactions: Transaction[] = [

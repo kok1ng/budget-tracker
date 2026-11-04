@@ -14,4 +14,5 @@ export interface Account {
   openingBalanceMinor: MoneyMinor
   createdAt: string
   updatedAt: string
+  archivedAt: string | null
 }

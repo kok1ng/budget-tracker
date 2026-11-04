@@ -1,3 +1,4 @@
+
 import type { Account, AccountType } from './account.types'
 import {
   isCurrencyCode,
@@ -28,6 +29,10 @@ function isValidIsoTimestamp(value: unknown): value is string {
   )
 }
 
+function isValidArchivedAt(value: unknown): boolean {
+  return value === null || isValidIsoTimestamp(value)
+}
+
 export function isValidAccount(value: unknown): value is Account {
   if (typeof value !== 'object' || value === null) {
     return false
@@ -44,6 +49,7 @@ export function isValidAccount(value: unknown): value is Account {
     isCurrencyCode(account.currency) &&
     isValidNonNegativeMoneyMinor(account.openingBalanceMinor) &&
     isValidIsoTimestamp(account.createdAt) &&
-    isValidIsoTimestamp(account.updatedAt)
+    isValidIsoTimestamp(account.updatedAt) &&
+    isValidArchivedAt(account.archivedAt)
   )
 }

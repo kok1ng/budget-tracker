@@ -12,6 +12,7 @@ const accounts: Account[] = [
     openingBalanceMinor: 150000,
     createdAt: '2026-11-04T10:00:00.000Z',
     updatedAt: '2026-11-04T10:00:00.000Z',
+    archivedAt: null
   },
   {
     id: 'account-2',
@@ -21,6 +22,7 @@ const accounts: Account[] = [
     openingBalanceMinor: 50000,
     createdAt: '2026-11-04T10:00:00.000Z',
     updatedAt: '2026-11-04T10:00:00.000Z',
+    archivedAt: null
   },
 ]
 
@@ -160,4 +162,44 @@ describe('isTransactionContextValid', () => {
       ),
     ).toBe(false)
   })
+
+  it('rejects a transaction with an archived source account', () => {
+  const archivedAccounts: Account[] = [
+    {
+      ...accounts[0],
+      archivedAt: '2026-11-04T12:00:00.000Z',
+    },
+    accounts[1],
+  ]
+
+  expect(
+    isTransactionContextValid(
+      validTransaction,
+      archivedAccounts,
+      categoryIds,
+    ),
+  ).toBe(false)
+})
+
+it('rejects a transfer to an archived destination account', () => {
+  const archivedAccounts: Account[] = [
+    accounts[0],
+    {
+      ...accounts[1],
+      archivedAt: '2026-11-04T12:00:00.000Z',
+    },
+  ]
+
+  expect(
+    isTransactionContextValid(
+      {
+        ...validTransaction,
+        type: 'transfer',
+        destinationAccountId: 'account-2',
+      },
+      archivedAccounts,
+      categoryIds,
+    ),
+  ).toBe(false)
+})
 })
