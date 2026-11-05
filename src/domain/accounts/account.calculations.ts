@@ -2,10 +2,7 @@ import type { Account } from './account.types'
 import type { Transaction } from '../transactions/transaction.types'
 
 // Account balance
-export function calculateAccountBalance(
-  account: Account,
-  transactions: Transaction[],
-): number {
+export function calculateAccountBalance(account: Account, transactions: Transaction[]): number {
   let balance = account.openingBalanceMinor
 
   for (const transaction of transactions) {
@@ -14,18 +11,12 @@ export function calculateAccountBalance(
         balance = updateBalance(balance, transaction.amountMinor)
       }
 
-      if (
-        transaction.type === 'expense' ||
-        transaction.type === 'transfer'
-      ) {
+      if (transaction.type === 'expense' || transaction.type === 'transfer') {
         balance = updateBalance(balance, -transaction.amountMinor)
       }
     }
 
-    if (
-      transaction.type === 'transfer' &&
-      transaction.destinationAccountId === account.id
-    ) {
+    if (transaction.type === 'transfer' && transaction.destinationAccountId === account.id) {
       balance = updateBalance(balance, transaction.amountMinor)
     }
   }
@@ -34,16 +25,9 @@ export function calculateAccountBalance(
 }
 
 // Total balance across all accounts
-export function calculateTotalBalance(
-  accounts: Account[],
-  transactions: Transaction[],
-): number {
+export function calculateTotalBalance(accounts: Account[], transactions: Transaction[]): number {
   return accounts.reduce(
-    (total, account) =>
-      updateBalance(
-        total,
-        calculateAccountBalance(account, transactions),
-      ),
+    (total, account) => updateBalance(total, calculateAccountBalance(account, transactions)),
     0,
   )
 }

@@ -10,7 +10,7 @@ const validAccount: Account = {
   openingBalanceMinor: 150000,
   createdAt: '2026-11-04T10:00:00.000Z',
   updatedAt: '2026-11-04T10:00:00.000Z',
-  archivedAt: null
+  archivedAt: null,
 }
 
 describe('isValidAccount', () => {
@@ -19,9 +19,7 @@ describe('isValidAccount', () => {
   })
 
   it('accepts an account with zero opening balance', () => {
-    expect(
-      isValidAccount({ ...validAccount, openingBalanceMinor: 0 }),
-    ).toBe(true)
+    expect(isValidAccount({ ...validAccount, openingBalanceMinor: 0 })).toBe(true)
   })
 
   it('rejects null and non-object values', () => {
@@ -47,21 +45,15 @@ describe('isValidAccount', () => {
   })
 
   it('rejects negative opening balances', () => {
-    expect(
-      isValidAccount({ ...validAccount, openingBalanceMinor: -100 }),
-    ).toBe(false)
+    expect(isValidAccount({ ...validAccount, openingBalanceMinor: -100 })).toBe(false)
   })
 
   it('rejects decimal opening balances', () => {
-    expect(
-      isValidAccount({ ...validAccount, openingBalanceMinor: 100.5 }),
-    ).toBe(false)
+    expect(isValidAccount({ ...validAccount, openingBalanceMinor: 100.5 })).toBe(false)
   })
 
   it('rejects invalid timestamps', () => {
-    expect(
-      isValidAccount({ ...validAccount, createdAt: 'not-a-date' }),
-    ).toBe(false)
+    expect(isValidAccount({ ...validAccount, createdAt: 'not-a-date' })).toBe(false)
   })
 
   it('rejects timestamps that are not in canonical UTC format', () => {
@@ -74,33 +66,33 @@ describe('isValidAccount', () => {
   })
 
   it('accepts an active account with archivedAt set to null', () => {
-  expect(isValidAccount(validAccount)).toBe(true)
-})
+    expect(isValidAccount(validAccount)).toBe(true)
+  })
 
-it('accepts an archived account with a valid timestamp', () => {
-  const archivedAccount = {
-    ...validAccount,
-    archivedAt: '2026-11-04T12:00:00.000Z',
-  }
+  it('accepts an archived account with a valid timestamp', () => {
+    const archivedAccount = {
+      ...validAccount,
+      archivedAt: '2026-11-04T12:00:00.000Z',
+    }
 
-  expect(isValidAccount(archivedAccount)).toBe(true)
-})
+    expect(isValidAccount(archivedAccount)).toBe(true)
+  })
 
-it('rejects an account with an invalid archivedAt timestamp', () => {
-  const invalidAccount = {
-    ...validAccount,
-    archivedAt: 'not-a-date',
-  }
+  it('rejects an account with an invalid archivedAt timestamp', () => {
+    const invalidAccount = {
+      ...validAccount,
+      archivedAt: 'not-a-date',
+    }
 
-  expect(isValidAccount(invalidAccount)).toBe(false)
-})
+    expect(isValidAccount(invalidAccount)).toBe(false)
+  })
 
-it('rejects an account with an unsupported archivedAt type', () => {
-  const invalidAccount = {
-    ...validAccount,
-    archivedAt: 123,
-  }
+  it('rejects an account with an unsupported archivedAt type', () => {
+    const invalidAccount = {
+      ...validAccount,
+      archivedAt: 123,
+    }
 
-  expect(isValidAccount(invalidAccount)).toBe(false)
-})
+    expect(isValidAccount(invalidAccount)).toBe(false)
+  })
 })

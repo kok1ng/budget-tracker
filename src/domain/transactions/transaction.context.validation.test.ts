@@ -12,7 +12,7 @@ const accounts: Account[] = [
     openingBalanceMinor: 150000,
     createdAt: '2026-11-04T10:00:00.000Z',
     updatedAt: '2026-11-04T10:00:00.000Z',
-    archivedAt: null
+    archivedAt: null,
   },
   {
     id: 'account-2',
@@ -22,7 +22,7 @@ const accounts: Account[] = [
     openingBalanceMinor: 50000,
     createdAt: '2026-11-04T10:00:00.000Z',
     updatedAt: '2026-11-04T10:00:00.000Z',
-    archivedAt: null
+    archivedAt: null,
   },
 ]
 
@@ -44,18 +44,12 @@ const categoryIds = ['category-1', 'category-2']
 
 describe('isTransactionContextValid', () => {
   it('accepts a valid expense transaction', () => {
-    expect(
-      isTransactionContextValid(validTransaction, accounts, categoryIds),
-    ).toBe(true)
+    expect(isTransactionContextValid(validTransaction, accounts, categoryIds)).toBe(true)
   })
 
   it('accepts a valid income transaction', () => {
     expect(
-      isTransactionContextValid(
-        { ...validTransaction, type: 'income' },
-        accounts,
-        categoryIds,
-      ),
+      isTransactionContextValid({ ...validTransaction, type: 'income' }, accounts, categoryIds),
     ).toBe(true)
   })
 
@@ -85,21 +79,13 @@ describe('isTransactionContextValid', () => {
 
   it('rejects a transaction with a currency different from its source account', () => {
     expect(
-      isTransactionContextValid(
-        { ...validTransaction, currency: 'EUR' },
-        accounts,
-        categoryIds,
-      ),
+      isTransactionContextValid({ ...validTransaction, currency: 'EUR' }, accounts, categoryIds),
     ).toBe(false)
   })
 
   it('accepts a transaction without a category', () => {
     expect(
-      isTransactionContextValid(
-        { ...validTransaction, categoryId: null },
-        accounts,
-        categoryIds,
-      ),
+      isTransactionContextValid({ ...validTransaction, categoryId: null }, accounts, categoryIds),
     ).toBe(true)
   })
 
@@ -164,42 +150,36 @@ describe('isTransactionContextValid', () => {
   })
 
   it('rejects a transaction with an archived source account', () => {
-  const archivedAccounts: Account[] = [
-    {
-      ...accounts[0],
-      archivedAt: '2026-11-04T12:00:00.000Z',
-    },
-    accounts[1],
-  ]
-
-  expect(
-    isTransactionContextValid(
-      validTransaction,
-      archivedAccounts,
-      categoryIds,
-    ),
-  ).toBe(false)
-})
-
-it('rejects a transfer to an archived destination account', () => {
-  const archivedAccounts: Account[] = [
-    accounts[0],
-    {
-      ...accounts[1],
-      archivedAt: '2026-11-04T12:00:00.000Z',
-    },
-  ]
-
-  expect(
-    isTransactionContextValid(
+    const archivedAccounts: Account[] = [
       {
-        ...validTransaction,
-        type: 'transfer',
-        destinationAccountId: 'account-2',
+        ...accounts[0],
+        archivedAt: '2026-11-04T12:00:00.000Z',
       },
-      archivedAccounts,
-      categoryIds,
-    ),
-  ).toBe(false)
-})
+      accounts[1],
+    ]
+
+    expect(isTransactionContextValid(validTransaction, archivedAccounts, categoryIds)).toBe(false)
+  })
+
+  it('rejects a transfer to an archived destination account', () => {
+    const archivedAccounts: Account[] = [
+      accounts[0],
+      {
+        ...accounts[1],
+        archivedAt: '2026-11-04T12:00:00.000Z',
+      },
+    ]
+
+    expect(
+      isTransactionContextValid(
+        {
+          ...validTransaction,
+          type: 'transfer',
+          destinationAccountId: 'account-2',
+        },
+        archivedAccounts,
+        categoryIds,
+      ),
+    ).toBe(false)
+  })
 })

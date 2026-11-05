@@ -6,26 +6,21 @@ export function isTransactionContextValid(
   accounts: Account[],
   categoryIds: string[],
 ): boolean {
-  const sourceAccount = accounts.find(
-    (account) => account.id === transaction.accountId,
-  )
+  const sourceAccount = accounts.find((account) => account.id === transaction.accountId)
 
   if (!sourceAccount) {
     return false
   }
 
   if (sourceAccount.archivedAt !== null) {
-  return false
-}
+    return false
+  }
 
   if (sourceAccount.currency !== transaction.currency) {
     return false
   }
 
-  if (
-    transaction.categoryId !== null &&
-    !categoryIds.includes(transaction.categoryId)
-  ) {
+  if (transaction.categoryId !== null && !categoryIds.includes(transaction.categoryId)) {
     return false
   }
 
@@ -39,8 +34,8 @@ export function isTransactionContextValid(
     }
 
     if (destinationAccount.archivedAt !== null) {
-  return false
-}
+      return false
+    }
 
     if (destinationAccount.id === sourceAccount.id) {
       return false

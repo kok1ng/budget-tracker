@@ -56,55 +56,37 @@ describe('isValidTransaction', () => {
   })
 
   it('rejects an empty transaction ID', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, id: '  ' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, id: '  ' })).toBe(false)
   })
 
   it('rejects unsupported transaction types', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, type: 'refund' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, type: 'refund' })).toBe(false)
   })
 
   it('rejects zero and negative amounts', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, amountMinor: 0 }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, amountMinor: 0 })).toBe(false)
 
-    expect(
-      isValidTransaction({ ...validTransaction, amountMinor: -100 }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, amountMinor: -100 })).toBe(false)
   })
 
   it('rejects decimal amounts', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, amountMinor: 100.5 }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, amountMinor: 100.5 })).toBe(false)
   })
 
   it('rejects unsupported currencies', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, currency: 'GBP' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, currency: 'GBP' })).toBe(false)
   })
 
   it('rejects empty descriptions', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, description: '  ' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, description: '  ' })).toBe(false)
   })
 
   it('rejects empty category IDs', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, categoryId: '  ' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, categoryId: '  ' })).toBe(false)
   })
 
   it('rejects empty account IDs', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, accountId: '  ' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, accountId: '  ' })).toBe(false)
   })
 
   it('rejects transfers without a destination account', () => {
@@ -137,19 +119,13 @@ describe('isValidTransaction', () => {
   })
 
   it('rejects invalid calendar dates', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, date: '2026-02-29' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, date: '2026-02-29' })).toBe(false)
 
-    expect(
-      isValidTransaction({ ...validTransaction, date: '2026-13-01' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, date: '2026-13-01' })).toBe(false)
   })
 
   it('rejects dates that do not use YYYY-MM-DD format', () => {
-    expect(
-      isValidTransaction({ ...validTransaction, date: '04-11-2026' }),
-    ).toBe(false)
+    expect(isValidTransaction({ ...validTransaction, date: '04-11-2026' })).toBe(false)
   })
 
   it('rejects invalid timestamps', () => {

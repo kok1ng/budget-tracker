@@ -1,16 +1,7 @@
-
 import type { Account, AccountType } from './account.types'
-import {
-  isCurrencyCode,
-  isValidNonNegativeMoneyMinor,
-} from '../money/money.validation'
+import { isCurrencyCode, isValidNonNegativeMoneyMinor } from '../money/money.validation'
 
-const ACCOUNT_TYPES: AccountType[] = [
-  'cash',
-  'debit_card',
-  'bank_account',
-  'savings',
-]
+const ACCOUNT_TYPES: AccountType[] = ['cash', 'debit_card', 'bank_account', 'savings']
 
 function isAccountType(value: unknown): value is AccountType {
   return ACCOUNT_TYPES.includes(value as AccountType)
@@ -23,10 +14,7 @@ function isValidIsoTimestamp(value: unknown): value is string {
 
   const date = new Date(value)
 
-  return (
-    !Number.isNaN(date.getTime()) &&
-    date.toISOString() === value
-  )
+  return !Number.isNaN(date.getTime()) && date.toISOString() === value
 }
 
 function isValidArchivedAt(value: unknown): boolean {

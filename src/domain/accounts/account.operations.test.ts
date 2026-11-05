@@ -1,4 +1,3 @@
-
 import { describe, expect, it } from 'vitest'
 import type { Account } from './account.types'
 import type { Transaction } from '../transactions/transaction.types'
@@ -9,7 +8,7 @@ import {
   archiveAccount,
   restoreAccount,
   getAccountById,
-  getAllAccounts
+  getAllAccounts,
 } from './account.operations'
 
 const existingAccount: Account = {
@@ -20,7 +19,7 @@ const existingAccount: Account = {
   openingBalanceMinor: 100000,
   createdAt: '2026-11-04T10:00:00.000Z',
   updatedAt: '2026-11-04T10:00:00.000Z',
-  archivedAt: null
+  archivedAt: null,
 }
 
 const newAccount: Account = {
@@ -31,7 +30,7 @@ const newAccount: Account = {
   openingBalanceMinor: 50000,
   createdAt: '2026-11-04T11:00:00.000Z',
   updatedAt: '2026-11-04T11:00:00.000Z',
-  archivedAt: null
+  archivedAt: null,
 }
 
 const archivedAccount: Account = {
@@ -60,9 +59,7 @@ describe('createAccount', () => {
       name: '  ',
     }
 
-    expect(() =>
-      createAccount([existingAccount], invalidAccount),
-    ).toThrow('Invalid account')
+    expect(() => createAccount([existingAccount], invalidAccount)).toThrow('Invalid account')
   })
 
   it('rejects an account with a duplicate ID', () => {
@@ -71,9 +68,9 @@ describe('createAccount', () => {
       id: existingAccount.id,
     }
 
-    expect(() =>
-      createAccount([existingAccount], duplicateAccount),
-    ).toThrow('Account with this ID already exists')
+    expect(() => createAccount([existingAccount], duplicateAccount)).toThrow(
+      'Account with this ID already exists',
+    )
   })
 
   it('does not modify the original accounts array', () => {
@@ -95,8 +92,6 @@ describe('createAccount', () => {
   })
 })
 
-
-
 describe('updateAccount', () => {
   it('updates an existing account', () => {
     const updatedAccount: Account = {
@@ -105,10 +100,7 @@ describe('updateAccount', () => {
       updatedAt: '2026-11-04T12:00:00.000Z',
     }
 
-    const result = updateAccount(
-      [existingAccount],
-      updatedAccount,
-    )
+    const result = updateAccount([existingAccount], updatedAccount)
 
     expect(result).toHaveLength(1)
     expect(result[0]).toEqual(updatedAccount)
@@ -121,18 +113,13 @@ describe('updateAccount', () => {
       updatedAt: '2026-11-04T12:00:00.000Z',
     }
 
-    const result = updateAccount(
-      [existingAccount],
-      updatedAccount,
-    )
+    const result = updateAccount([existingAccount], updatedAccount)
 
     expect(result[0].openingBalanceMinor).toBe(0)
   })
 
   it('rejects updating an account that does not exist', () => {
-    expect(() =>
-      updateAccount([], existingAccount),
-    ).toThrow('Account not found')
+    expect(() => updateAccount([], existingAccount)).toThrow('Account not found')
   })
 
   it('rejects an invalid updated account', () => {
@@ -142,9 +129,7 @@ describe('updateAccount', () => {
       updatedAt: '2026-11-04T12:00:00.000Z',
     }
 
-    expect(() =>
-      updateAccount([existingAccount], invalidAccount),
-    ).toThrow('Invalid account')
+    expect(() => updateAccount([existingAccount], invalidAccount)).toThrow('Invalid account')
   })
 
   it('does not allow changing the creation date', () => {
@@ -154,9 +139,9 @@ describe('updateAccount', () => {
       updatedAt: '2026-11-04T12:00:00.000Z',
     }
 
-    expect(() =>
-      updateAccount([existingAccount], updatedAccount),
-    ).toThrow('Account creation date cannot be changed')
+    expect(() => updateAccount([existingAccount], updatedAccount)).toThrow(
+      'Account creation date cannot be changed',
+    )
   })
 
   it('does not modify the original accounts array', () => {
@@ -189,31 +174,29 @@ describe('updateAccount', () => {
   })
 
   it('should reject changing the archive status directly', () => {
-  const updatedAccount: Account = {
-    ...existingAccount,
-    archivedAt: '2026-11-04T12:00:00.000Z',
-    updatedAt: '2026-11-04T12:00:00.000Z',
-  }
+    const updatedAccount: Account = {
+      ...existingAccount,
+      archivedAt: '2026-11-04T12:00:00.000Z',
+      updatedAt: '2026-11-04T12:00:00.000Z',
+    }
 
-  expect(() =>
-    updateAccount([existingAccount], updatedAccount),
-  ).toThrow('Account archive status cannot be changed directly')
+    expect(() => updateAccount([existingAccount], updatedAccount)).toThrow(
+      'Account archive status cannot be changed directly',
+    )
+  })
+
+  it('should reject restoring an account through updateAccount', () => {
+    const updatedAccount: Account = {
+      ...archivedAccount,
+      archivedAt: null,
+      updatedAt: '2026-11-05T12:00:00.000Z',
+    }
+
+    expect(() => updateAccount([archivedAccount], updatedAccount)).toThrow(
+      'Account archive status cannot be changed directly',
+    )
+  })
 })
-
-it('should reject restoring an account through updateAccount', () => {
-  const updatedAccount: Account = {
-    ...archivedAccount,
-    archivedAt: null,
-    updatedAt: '2026-11-05T12:00:00.000Z',
-  }
-
-  expect(() =>
-    updateAccount([archivedAccount], updatedAccount),
-  ).toThrow('Account archive status cannot be changed directly')
-})
-})
-
-
 
 const existingTransaction: Transaction = {
   id: 'transaction-1',
@@ -243,119 +226,82 @@ const transferTransaction: Transaction = {
   updatedAt: '2026-11-04T13:00:00.000Z',
 }
 
-
-
 describe('deleteAccount', () => {
   it('deletes an account without transactions', () => {
     const accounts = [existingAccount, newAccount]
 
-    const result = deleteAccount(
-      accounts,
-      'account-2',
-      [],
-    )
+    const result = deleteAccount(accounts, 'account-2', [])
 
     expect(result).toEqual([existingAccount])
     expect(result).toHaveLength(1)
   })
 
   it('rejects deleting an account that does not exist', () => {
-    expect(() =>
-      deleteAccount([], 'unknown-account', []),
-    ).toThrow('Account not found')
+    expect(() => deleteAccount([], 'unknown-account', [])).toThrow('Account not found')
   })
 
   it('rejects deleting an account with outgoing transactions', () => {
-    expect(() =>
-      deleteAccount(
-        [existingAccount],
-        'account-1',
-        [existingTransaction],
-      ),
-    ).toThrow('Cannot delete an account with transactions')
+    expect(() => deleteAccount([existingAccount], 'account-1', [existingTransaction])).toThrow(
+      'Cannot delete an account with transactions',
+    )
   })
 
   it('rejects deleting an account used as a transfer destination', () => {
-    expect(() =>
-      deleteAccount(
-        [newAccount],
-        'account-2',
-        [transferTransaction],
-      ),
-    ).toThrow('Cannot delete an account with transactions')
+    expect(() => deleteAccount([newAccount], 'account-2', [transferTransaction])).toThrow(
+      'Cannot delete an account with transactions',
+    )
   })
 
   it('does not modify the original accounts array', () => {
     const accounts = [existingAccount, newAccount]
 
-    const result = deleteAccount(
-      accounts,
-      'account-2',
-      [],
-    )
+    const result = deleteAccount(accounts, 'account-2', [])
 
     expect(accounts).toHaveLength(2)
     expect(result).not.toBe(accounts)
   })
 
   it('does not modify the transaction history', () => {
-  const accounts = [existingAccount, newAccount]
-  const transactions = [existingTransaction]
-  const originalTransactions = [...transactions]
+    const accounts = [existingAccount, newAccount]
+    const transactions = [existingTransaction]
+    const originalTransactions = [...transactions]
 
-  deleteAccount(
-    accounts,
-    'account-2',
-    transactions,
-  )
+    deleteAccount(accounts, 'account-2', transactions)
 
-  expect(transactions).toEqual(originalTransactions)
+    expect(transactions).toEqual(originalTransactions)
+  })
 })
-})
-
 
 describe('archiveAccount', () => {
   it('should archive an active account', () => {
-    const result = archiveAccount(
-      [existingAccount],
-      'account-1',
-      '2026-11-04T12:00:00.000Z',
-    )
+    const result = archiveAccount([existingAccount], 'account-1', '2026-11-04T12:00:00.000Z')
 
     expect(result[0].archivedAt).toBe('2026-11-04T12:00:00.000Z')
     expect(result[0].updatedAt).toBe('2026-11-04T12:00:00.000Z')
   })
 
   it('should throw an error if the account does not exist', () => {
-    expect(() =>
-      archiveAccount([], 'account-1', '2026-11-04T12:00:00.000Z'),
-    ).toThrow('Account not found')
+    expect(() => archiveAccount([], 'account-1', '2026-11-04T12:00:00.000Z')).toThrow(
+      'Account not found',
+    )
   })
 
   it('should throw an error if the account is already archived', () => {
     expect(() =>
-      archiveAccount(
-        [archivedAccount],
-        'account-1',
-        '2026-11-05T12:00:00.000Z',
-      ),
+      archiveAccount([archivedAccount], 'account-1', '2026-11-05T12:00:00.000Z'),
     ).toThrow('Account is already archived')
   })
 
   it('should throw an error if the archive timestamp is invalid', () => {
-    expect(() =>
-      archiveAccount([existingAccount], 'account-1', 'invalid-date'),
-    ).toThrow('Invalid archive timestamp')
+    expect(() => archiveAccount([existingAccount], 'account-1', 'invalid-date')).toThrow(
+      'Invalid archive timestamp',
+    )
   })
 
   it('should not mutate the original accounts array', () => {
     const accounts = [existingAccount]
 
-    const result = archiveAccount(
-      accounts,
-      'account-1',
-      '2026-11-04T12:00:00.000Z',
-    )
+    const result = archiveAccount(accounts, 'account-1', '2026-11-04T12:00:00.000Z')
 
     expect(accounts[0].archivedAt).toBeNull()
     expect(result).not.toBe(accounts)
@@ -364,59 +310,42 @@ describe('archiveAccount', () => {
   it('should preserve other accounts', () => {
     const accounts = [existingAccount, newAccount]
 
-    const result = archiveAccount(
-      accounts,
-      'account-1',
-      '2026-11-04T12:00:00.000Z',
-    )
+    const result = archiveAccount(accounts, 'account-1', '2026-11-04T12:00:00.000Z')
 
     expect(result[1]).toBe(newAccount)
   })
 })
 
-
 describe('restoreAccount', () => {
   it('should restore an archived account', () => {
-    const result = restoreAccount(
-      [archivedAccount],
-      'account-1',
-      '2026-11-05T12:00:00.000Z',
-    )
+    const result = restoreAccount([archivedAccount], 'account-1', '2026-11-05T12:00:00.000Z')
 
     expect(result[0].archivedAt).toBeNull()
     expect(result[0].updatedAt).toBe('2026-11-05T12:00:00.000Z')
   })
 
   it('should throw an error if the account does not exist', () => {
-    expect(() =>
-      restoreAccount([], 'account-1', '2026-11-05T12:00:00.000Z'),
-    ).toThrow('Account not found')
+    expect(() => restoreAccount([], 'account-1', '2026-11-05T12:00:00.000Z')).toThrow(
+      'Account not found',
+    )
   })
 
   it('should throw an error if the account is not archived', () => {
     expect(() =>
-      restoreAccount(
-        [existingAccount],
-        'account-1',
-        '2026-11-05T12:00:00.000Z',
-      ),
+      restoreAccount([existingAccount], 'account-1', '2026-11-05T12:00:00.000Z'),
     ).toThrow('Account is not archived')
   })
 
   it('should throw an error if the update timestamp is invalid', () => {
-    expect(() =>
-      restoreAccount([archivedAccount], 'account-1', 'invalid-date'),
-    ).toThrow('Invalid update timestamp')
+    expect(() => restoreAccount([archivedAccount], 'account-1', 'invalid-date')).toThrow(
+      'Invalid update timestamp',
+    )
   })
 
   it('should not mutate the original accounts array', () => {
     const accounts = [archivedAccount]
 
-    const result = restoreAccount(
-      accounts,
-      'account-1',
-      '2026-11-05T12:00:00.000Z',
-    )
+    const result = restoreAccount(accounts, 'account-1', '2026-11-05T12:00:00.000Z')
 
     expect(accounts[0].archivedAt).toBe('2026-11-04T12:00:00.000Z')
     expect(result).not.toBe(accounts)
@@ -425,10 +354,7 @@ describe('restoreAccount', () => {
 
 describe('getAccountById', () => {
   it('should return an account with the specified ID', () => {
-    const result = getAccountById(
-      [existingAccount, newAccount],
-      'account-1',
-    )
+    const result = getAccountById([existingAccount, newAccount], 'account-1')
 
     expect(result).toEqual(existingAccount)
   })
@@ -440,10 +366,7 @@ describe('getAccountById', () => {
   })
 
   it('should return an archived account', () => {
-    const result = getAccountById(
-      [archivedAccount],
-      'account-1',
-    )
+    const result = getAccountById([archivedAccount], 'account-1')
 
     expect(result).toEqual(archivedAccount)
   })
