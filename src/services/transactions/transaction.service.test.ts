@@ -16,6 +16,17 @@ const testAccount: Account = {
   archivedAt: null,
 }
 
+const secondTestAccount: Account = {
+  id: 'account-2',
+  name: 'Savings account',
+  type: 'savings',
+  currency: 'EUR',
+  openingBalanceMinor: 50000,
+  createdAt: '2026-11-06T10:00:00.000Z',
+  updatedAt: '2026-11-06T10:00:00.000Z',
+  archivedAt: null,
+}
+
 const existingTransaction: Transaction = {
   id: 'transaction-existing',
   type: 'expense',
@@ -336,6 +347,7 @@ describe('updateTransaction', () => {
       amountMinor: 30000,
       description: 'Updated groceries',
       categoryId: 'category-1',
+      accountId: 'account-1',
       date: '2026-11-05',
     })
 
@@ -352,12 +364,128 @@ describe('updateTransaction', () => {
     expect(transactions[0]).toEqual(result)
   })
 
+  it('moves a transaction to another account and inherits its currency', async () => {
+    accounts.push(secondTestAccount)
+
+    const result = await service.updateTransaction('transaction-existing', {
+      type: 'expense',
+      amountMinor: 30000,
+      description: 'Updated groceries',
+      accountId: 'account-2',
+      date: '2026-11-06',
+    })
+
+    expect(result.accountId).toBe('account-2')
+    expect(result.currency).toBe('EUR')
+    expect(transactions).toHaveLength(1)
+    expect(transactions[0]).toEqual(result)
+  })
+
+  it('rejects moving a transaction to an account that does not exist', async () => {
+    await expect(
+      service.updateTransaction('transaction-existing', {
+        type: 'expense',
+        amountMinor: 30000,
+        description: 'Updated groceries',
+        accountId: 'missing-account',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'ACCOUNT_NOT_FOUND',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
+
+  it('rejects moving a transaction to an archived account', async () => {
+    accounts.push({
+      ...secondTestAccount,
+      archivedAt: '2026-11-06T11:00:00.000Z',
+    })
+
+    await expect(
+      service.updateTransaction('transaction-existing', {
+        type: 'expense',
+        amountMinor: 30000,
+        description: 'Updated groceries',
+        accountId: 'account-2',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'ACCOUNT_ARCHIVED',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
+
+  it('rejects moving a transaction when the destination account balance would become negative', async () => {
+    accounts.push(secondTestAccount)
+
+    await expect(
+      service.updateTransaction('transaction-existing', {
+        type: 'expense',
+        amountMinor: 60000,
+        description: 'Updated groceries',
+        accountId: 'account-2',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'INSUFFICIENT_BALANCE',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
+
+  it('rejects moving an income transaction when the original account balance would become negative', async () => {
+    accounts[0] = {
+      ...testAccount,
+      openingBalanceMinor: 0,
+    }
+
+    accounts.push(secondTestAccount)
+
+    const incomeTransaction: Transaction = {
+      ...existingTransaction,
+      id: 'transaction-income-to-move',
+      type: 'income',
+      amountMinor: 20000,
+    }
+
+    const remainingExpense: Transaction = {
+      ...existingTransaction,
+      id: 'transaction-expense-remains',
+      type: 'expense',
+      amountMinor: 20000,
+    }
+
+    transactions = [incomeTransaction, remainingExpense]
+
+    await expect(
+      service.updateTransaction('transaction-income-to-move', {
+        type: 'income',
+        amountMinor: 20000,
+        description: 'Moved income',
+        accountId: 'account-2',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'INSUFFICIENT_BALANCE',
+    })
+
+    expect(transactions).toEqual([incomeTransaction, remainingExpense])
+  })
+
   it('rejects an update that would make the account balance negative', async () => {
     await expect(
       service.updateTransaction('transaction-existing', {
         type: 'expense',
         amountMinor: 120000,
         description: 'Over-budget purchase',
+        accountId: 'account-1',
         date: '2026-11-06',
       }),
     ).rejects.toMatchObject({
@@ -374,6 +502,7 @@ describe('updateTransaction', () => {
         type: 'expense',
         amountMinor: 10000,
         description: 'Some expense',
+        accountId: 'account-1',
         date: '2026-11-06',
       }),
     ).rejects.toMatchObject({
@@ -390,6 +519,7 @@ describe('updateTransaction', () => {
         type: 'expense',
         amountMinor: 20000,
         description: '   ',
+        accountId: 'account-1',
         date: '2026-11-06',
       }),
     ).rejects.toMatchObject({
@@ -406,6 +536,7 @@ describe('updateTransaction', () => {
         type: 'expense',
         amountMinor: 0,
         description: 'Updated groceries',
+        accountId: 'account-1',
         date: '2026-11-06',
       }),
     ).rejects.toMatchObject({
@@ -424,6 +555,7 @@ describe('updateTransaction', () => {
         type: 'expense',
         amountMinor: 20000,
         description: 'Updated groceries',
+        accountId: 'account-1',
         date: '2026-11-06',
       }),
     ).rejects.toMatchObject({
@@ -445,6 +577,7 @@ describe('updateTransaction', () => {
         type: 'expense',
         amountMinor: 20000,
         description: 'Updated groceries',
+        accountId: 'account-1',
         date: '2026-11-06',
       }),
     ).rejects.toMatchObject({
@@ -467,6 +600,7 @@ describe('updateTransaction', () => {
         type: 'expense',
         amountMinor: 30000,
         description: 'Updated groceries',
+        accountId: 'account-1',
         date: '2026-11-06',
       }),
     ).rejects.toBe(storageError)
@@ -479,6 +613,7 @@ describe('updateTransaction', () => {
       type: 'income',
       amountMinor: 20000,
       description: 'Refund',
+      accountId: 'account-1',
       date: '2026-11-06',
     })
 

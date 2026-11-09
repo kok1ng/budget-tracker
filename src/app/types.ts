@@ -1,1 +1,1 @@
-export type Page = 'dashboard' | 'transactions' | 'categories' | 'budgets' | 'settings'
+export type Page = 'dashboard' | 'transactions' | 'accounts' | 'categories' | 'budgets' | 'settings'

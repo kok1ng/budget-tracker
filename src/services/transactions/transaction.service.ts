@@ -116,19 +116,38 @@ export class TransactionService {
       )
     }
 
-    const account = await this.accountRepository.getById(existingTransaction.accountId)
+    const originalAccount = await this.accountRepository.getById(existingTransaction.accountId)
 
-    if (account === null) {
+    if (originalAccount === null) {
       throw new TransactionOperationError(
         'ACCOUNT_NOT_FOUND',
         'The transaction account does not exist.',
       )
     }
 
-    if (account.archivedAt !== null) {
+    if (originalAccount.archivedAt !== null) {
       throw new TransactionOperationError(
         'ACCOUNT_ARCHIVED',
         'Cannot update a transaction for an archived account.',
+      )
+    }
+
+    const targetAccount =
+      input.accountId === originalAccount.id
+        ? originalAccount
+        : await this.accountRepository.getById(input.accountId)
+
+    if (targetAccount === null) {
+      throw new TransactionOperationError(
+        'ACCOUNT_NOT_FOUND',
+        'The selected destination account does not exist.',
+      )
+    }
+
+    if (targetAccount.archivedAt !== null) {
+      throw new TransactionOperationError(
+        'ACCOUNT_ARCHIVED',
+        'Cannot move a transaction to an archived account.',
       )
     }
 
@@ -136,6 +155,8 @@ export class TransactionService {
       ...existingTransaction,
       type: input.type,
       amountMinor: input.amountMinor,
+      currency: targetAccount.currency,
+      accountId: targetAccount.id,
       description: input.description.trim(),
       categoryId: input.categoryId ?? null,
       date: input.date,
@@ -155,13 +176,24 @@ export class TransactionService {
       transaction.id === id ? updatedTransaction : transaction,
     )
 
-    const updatedBalance = calculateAccountBalance(account, updatedTransactions)
+    const originalAccountBalance = calculateAccountBalance(originalAccount, updatedTransactions)
 
-    if (updatedBalance < 0) {
+    if (originalAccountBalance < 0) {
       throw new TransactionOperationError(
         'INSUFFICIENT_BALANCE',
-        'The updated transaction would make the account balance negative.',
+        'Updating the transaction would make the original account balance negative.',
       )
+    }
+
+    if (targetAccount.id !== originalAccount.id) {
+      const targetAccountBalance = calculateAccountBalance(targetAccount, updatedTransactions)
+
+      if (targetAccountBalance < 0) {
+        throw new TransactionOperationError(
+          'INSUFFICIENT_BALANCE',
+          'Moving the transaction would make the destination account balance negative.',
+        )
+      }
     }
 
     await this.transactionRepository.save(updatedTransaction)

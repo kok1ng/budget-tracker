@@ -10,6 +10,7 @@ type AppLayoutProps = {
 const navigationItems: { label: string; page: Page }[] = [
   { label: 'Dashboard', page: 'dashboard' },
   { label: 'Transactions', page: 'transactions' },
+  { label: 'Accounts', page: 'accounts' },
   { label: 'Categories', page: 'categories' },
   { label: 'Budgets', page: 'budgets' },
   { label: 'Settings', page: 'settings' },

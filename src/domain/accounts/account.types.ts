@@ -12,3 +12,5 @@ export interface Account {
   updatedAt: string
   archivedAt: string | null
 }
+
+export type CreateAccountInput = Pick<Account, 'name' | 'type' | 'currency' | 'openingBalanceMinor'>

@@ -9,7 +9,7 @@ export interface CreateTransactionInput {
   date: string
 }
 
-export type UpdateTransactionInput = Omit<CreateTransactionInput, 'accountId'>
+export type UpdateTransactionInput = CreateTransactionInput
 
 export interface TransactionServiceOptions {
   generateId: () => string
