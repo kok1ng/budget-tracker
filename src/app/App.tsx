@@ -21,6 +21,10 @@ function App() {
     isLoading,
     loadError,
     createAccount,
+    updateAccount,
+    deleteAccount,
+    archiveAccount,
+    restoreAccount,
     createTransaction,
     updateTransaction,
     deleteTransaction,
@@ -46,6 +50,10 @@ function App() {
             accounts={accounts}
             transactions={transactions}
             onCreateAccount={createAccount}
+            onUpdateAccount={updateAccount}
+            onDeleteAccount={deleteAccount}
+            onArchiveAccount={archiveAccount}
+            onRestoreAccount={restoreAccount}
           />
         )
       case 'categories':

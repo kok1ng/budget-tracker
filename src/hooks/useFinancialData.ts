@@ -16,8 +16,9 @@ import type {
   CreateTransactionInput,
   UpdateTransactionInput,
 } from '../services/transactions/transaction.service.types'
+import { AccountService } from '../services/accounts/account.service'
+import type { UpdateAccountInput } from '../services/accounts/account.service.types'
 
-import { createAccount as createAccountOperation } from '../domain/accounts/account.operations'
 import type { CreateAccountInput } from '../domain/accounts/account.types'
 
 interface AppData {
@@ -35,6 +36,8 @@ const accountRepository: AccountRepository = new LocalStorageAccountRepository()
 const transactionRepository: TransactionRepository = new LocalStorageTransactionRepository()
 
 const transactionService = new TransactionService(accountRepository, transactionRepository)
+
+const accountService = new AccountService(accountRepository, transactionRepository)
 
 export function useFinancialData() {
   const [appData, setAppData] = useState<AppData>({
@@ -86,29 +89,62 @@ export function useFinancialData() {
   }, [])
 
   async function createAccount(input: CreateAccountInput): Promise<Account> {
-    const timestamp = new Date().toISOString()
-
-    const account: Account = {
-      id: crypto.randomUUID(),
-      name: input.name.trim(),
-      type: input.type,
-      currency: input.currency,
-      openingBalanceMinor: input.openingBalanceMinor,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      archivedAt: null,
-    }
-
-    const updatedAccounts = createAccountOperation(appData.accounts, account)
-
-    await accountRepository.save(account)
+    const account = await accountService.createAccount(input)
 
     setAppData((currentData) => ({
       ...currentData,
-      accounts: updatedAccounts,
+      accounts: [...currentData.accounts, account],
     }))
 
     return account
+  }
+
+  async function updateAccount(id: string, input: UpdateAccountInput): Promise<Account> {
+    const updatedAccount = await accountService.updateAccount(id, input)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      accounts: currentData.accounts.map((account) =>
+        account.id === id ? updatedAccount : account,
+      ),
+    }))
+
+    return updatedAccount
+  }
+
+  async function deleteAccount(id: string): Promise<void> {
+    await accountService.deleteAccount(id)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      accounts: currentData.accounts.filter((account) => account.id !== id),
+    }))
+  }
+
+  async function archiveAccount(id: string): Promise<Account> {
+    const archivedAccount = await accountService.archiveAccount(id)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      accounts: currentData.accounts.map((account) =>
+        account.id === id ? archivedAccount : account,
+      ),
+    }))
+
+    return archivedAccount
+  }
+
+  async function restoreAccount(id: string): Promise<Account> {
+    const restoredAccount = await accountService.restoreAccount(id)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      accounts: currentData.accounts.map((account) =>
+        account.id === id ? restoredAccount : account,
+      ),
+    }))
+
+    return restoredAccount
   }
 
   async function createTransaction(input: CreateTransactionInput) {
@@ -148,6 +184,10 @@ export function useFinancialData() {
     isLoading,
     loadError,
     createAccount,
+    updateAccount,
+    deleteAccount,
+    archiveAccount,
+    restoreAccount,
     createTransaction,
     updateTransaction,
     deleteTransaction,

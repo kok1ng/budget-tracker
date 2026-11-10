@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Account } from '../domain/accounts/account.types'
 import type { Transaction } from '../domain/transactions/transaction.types'
 
+import type { UpdateAccountInput } from '../services/accounts/account.service.types'
+
 import { useFinancialData } from './useFinancialData'
 
 const repositoryMocks = vi.hoisted(() => ({
@@ -175,7 +177,10 @@ describe('useFinancialData', () => {
           currency: 'EUR',
           openingBalanceMinor: 250000,
         }),
-      ).rejects.toThrow('Invalid account')
+      ).rejects.toMatchObject({
+        name: 'AccountOperationError',
+        code: 'INVALID_ACCOUNT',
+      })
     })
 
     expect(result.current.accounts).toEqual(initialAccounts)
@@ -325,5 +330,199 @@ describe('useFinancialData', () => {
     ).rejects.toThrow('Storage write failed')
 
     expect(result.current.transactions).toEqual(initialTransactions)
+  })
+
+  it('updates an account in state after successful update', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    let updatedAccount: Account | undefined
+
+    const input: UpdateAccountInput = {
+      name: 'Updated main account',
+      type: 'savings',
+    }
+
+    await act(async () => {
+      updatedAccount = await result.current.updateAccount('account-1', input)
+    })
+
+    expect(updatedAccount).toMatchObject({
+      id: 'account-1',
+      name: 'Updated main account',
+      type: 'savings',
+    })
+
+    expect(result.current.accounts).toHaveLength(1)
+    expect(result.current.accounts[0]).toEqual(updatedAccount)
+
+    expect(repositoryMocks.accountSave).toHaveBeenCalledOnce()
+    expect(repositoryMocks.accountSave).toHaveBeenCalledWith(updatedAccount)
+  })
+
+  it('keeps account state unchanged when account update fails', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    const initialAccounts = result.current.accounts
+
+    await act(async () => {
+      await expect(
+        result.current.updateAccount('account-1', {
+          name: 'Updated main account',
+          type: 'savings',
+          openingBalanceMinor: 150000,
+        }),
+      ).rejects.toMatchObject({
+        name: 'AccountOperationError',
+        code: 'OPENING_BALANCE_IMMUTABLE',
+      })
+    })
+
+    expect(result.current.accounts).toEqual(initialAccounts)
+    expect(repositoryMocks.accountSave).not.toHaveBeenCalled()
+  })
+
+  it('removes an account from state after successful deletion', async () => {
+    const secondAccount: Account = {
+      ...testAccount,
+      id: 'account-2',
+      name: 'Savings account',
+    }
+
+    accounts.push(secondAccount)
+
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.accounts).toHaveLength(2)
+    })
+
+    await act(async () => {
+      await result.current.deleteAccount('account-2')
+    })
+
+    expect(result.current.accounts).toHaveLength(1)
+    expect(result.current.accounts[0]).toEqual(testAccount)
+    expect(repositoryMocks.accountDelete).toHaveBeenCalledWith('account-2')
+  })
+
+  it('keeps account state unchanged when deletion fails because transactions exist', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.accounts).toHaveLength(1)
+    })
+
+    await expect(result.current.deleteAccount('account-1')).rejects.toMatchObject({
+      name: 'AccountOperationError',
+      code: 'ACCOUNT_HAS_TRANSACTIONS',
+    })
+
+    expect(result.current.accounts).toEqual([testAccount])
+    expect(repositoryMocks.accountDelete).not.toHaveBeenCalled()
+  })
+
+  it('updates an account in state after successful archiving', async () => {
+    const zeroBalanceAccount: Account = {
+      ...testAccount,
+      id: 'account-2',
+      name: 'Empty account',
+      openingBalanceMinor: 0,
+    }
+
+    accounts.push(zeroBalanceAccount)
+
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.accounts).toHaveLength(2)
+    })
+
+    let archivedAccount: Account | undefined
+
+    await act(async () => {
+      archivedAccount = await result.current.archiveAccount('account-2')
+    })
+
+    expect(archivedAccount?.archivedAt).not.toBeNull()
+    expect(result.current.accounts).toHaveLength(2)
+    expect(result.current.accounts[1]).toEqual(archivedAccount)
+
+    expect(repositoryMocks.accountSave).toHaveBeenCalledOnce()
+    expect(repositoryMocks.accountSave).toHaveBeenCalledWith(archivedAccount)
+  })
+
+  it('keeps account state unchanged when archiving fails because balance is not zero', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    const initialAccounts = result.current.accounts
+
+    await expect(result.current.archiveAccount('account-1')).rejects.toMatchObject({
+      name: 'AccountOperationError',
+      code: 'ACCOUNT_BALANCE_NOT_ZERO',
+    })
+
+    expect(result.current.accounts).toEqual(initialAccounts)
+    expect(repositoryMocks.accountSave).not.toHaveBeenCalled()
+  })
+
+  it('updates an account in state after successful restoration', async () => {
+    const archivedAccount: Account = {
+      ...testAccount,
+      id: 'account-2',
+      name: 'Archived account',
+      openingBalanceMinor: 0,
+      archivedAt: '2026-11-07T10:00:00.000Z',
+    }
+
+    accounts.push(archivedAccount)
+
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.accounts).toHaveLength(2)
+    })
+
+    let restoredAccount: Account | undefined
+
+    await act(async () => {
+      restoredAccount = await result.current.restoreAccount('account-2')
+    })
+
+    expect(restoredAccount?.archivedAt).toBeNull()
+    expect(result.current.accounts).toHaveLength(2)
+    expect(result.current.accounts[1]).toEqual(restoredAccount)
+
+    expect(repositoryMocks.accountSave).toHaveBeenCalledOnce()
+    expect(repositoryMocks.accountSave).toHaveBeenCalledWith(restoredAccount)
+  })
+
+  it('keeps account state unchanged when restoration fails because account is already active', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    const initialAccounts = result.current.accounts
+
+    await expect(result.current.restoreAccount('account-1')).rejects.toMatchObject({
+      name: 'AccountOperationError',
+      code: 'ACCOUNT_NOT_ARCHIVED',
+    })
+
+    expect(result.current.accounts).toEqual(initialAccounts)
+    expect(repositoryMocks.accountSave).not.toHaveBeenCalled()
   })
 })
