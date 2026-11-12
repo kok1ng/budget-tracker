@@ -26,7 +26,7 @@ type TransactionFormProps = TransactionFormCommonProps &
       }
   )
 
-type FormTransactionType = 'income' | 'expense'
+type FormTransactionType = 'income' | 'expense' | 'transfer'
 
 function getLocalDateString(): string {
   const now = new Date()
@@ -49,11 +49,7 @@ function TransactionForm(props: TransactionFormProps) {
   const activeAccounts = accounts.filter((account) => account.archivedAt === null)
 
   const [type, setType] = useState<FormTransactionType>(
-    props.mode === 'edit'
-      ? props.transaction.type === 'income'
-        ? 'income'
-        : 'expense'
-      : 'expense',
+    props.mode === 'edit' ? props.transaction.type : 'expense',
   )
 
   const [amount, setAmount] = useState(
@@ -68,6 +64,14 @@ function TransactionForm(props: TransactionFormProps) {
     props.mode === 'edit' ? props.transaction.accountId : (activeAccounts[0]?.id ?? ''),
   )
 
+  const [destinationAccountId, setDestinationAccountId] = useState(() => {
+    if (props.mode === 'edit' && props.transaction.type === 'transfer') {
+      return props.transaction.destinationAccountId ?? ''
+    }
+
+    return activeAccounts.find((account) => account.id !== accountId)?.id ?? ''
+  })
+
   const [date, setDate] = useState(
     props.mode === 'edit' ? props.transaction.date : getLocalDateString(),
   )
@@ -75,6 +79,8 @@ function TransactionForm(props: TransactionFormProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  const destinationAccounts = activeAccounts.filter((account) => account.id !== accountId)
 
   if (activeAccounts.length === 0) {
     return (
@@ -111,37 +117,57 @@ function TransactionForm(props: TransactionFormProps) {
       return
     }
 
+    if (type === 'transfer') {
+      if (activeAccounts.length < 2) {
+        setErrorMessage('A transfer requires at least two active accounts.')
+        return
+      }
+
+      if (!destinationAccounts.some((account) => account.id === destinationAccountId)) {
+        setErrorMessage('Please select a different active destination account.')
+        return
+      }
+    }
+
     setIsSaving(true)
 
     try {
-      if (props.mode === 'create') {
-        await props.onCreateTransaction({
-          type,
-          amountMinor,
-          description: description.trim(),
-          categoryId: null,
-          accountId,
-          date,
-        })
-      } else {
-        await props.onUpdateTransaction(props.transaction.id, {
-          type,
-          amountMinor,
-          description: description.trim(),
-          categoryId: props.transaction.categoryId,
-          accountId,
-          date,
-        })
+      const commonInput = {
+        amountMinor,
+        description: description.trim(),
+        accountId,
+        date,
       }
 
+      const input: CreateTransactionInput | UpdateTransactionInput =
+        type === 'transfer'
+          ? {
+              ...commonInput,
+              type: 'transfer',
+              destinationAccountId,
+            }
+          : {
+              ...commonInput,
+              type,
+              categoryId: props.mode === 'edit' ? props.transaction.categoryId : null,
+            }
+
       if (props.mode === 'create') {
+        await props.onCreateTransaction(input)
+
+        const initialAccountId = activeAccounts[0]?.id ?? ''
+
         setType('expense')
         setAmount('')
         setDescription('')
-        setAccountId(activeAccounts[0]?.id ?? '')
+        setAccountId(initialAccountId)
+        setDestinationAccountId(
+          activeAccounts.find((account) => account.id !== initialAccountId)?.id ?? '',
+        )
         setDate(getLocalDateString())
         setSuccessMessage('Transaction created successfully.')
       } else {
+        await props.onUpdateTransaction(props.transaction.id, input)
         setSuccessMessage('Transaction updated successfully.')
       }
     } catch (error) {
@@ -178,6 +204,9 @@ function TransactionForm(props: TransactionFormProps) {
           >
             <option value="expense">Expense</option>
             <option value="income">Income</option>
+            <option value="transfer" disabled={activeAccounts.length < 2}>
+              Transfer
+            </option>
           </select>
         </div>
 
@@ -221,13 +250,22 @@ function TransactionForm(props: TransactionFormProps) {
 
         <div>
           <label htmlFor="transaction-account" className="block text-sm font-medium text-slate-700">
-            Account
+            {type === 'transfer' ? 'From account' : 'Account'}
           </label>
           <select
             id="transaction-account"
             className={inputClassName}
             value={accountId}
-            onChange={(event) => setAccountId(event.target.value)}
+            onChange={(event) => {
+              const nextAccountId = event.target.value
+              setAccountId(nextAccountId)
+
+              if (nextAccountId === destinationAccountId) {
+                setDestinationAccountId(
+                  activeAccounts.find((account) => account.id !== nextAccountId)?.id ?? '',
+                )
+              }
+            }}
             required
             disabled={isSaving}
           >
@@ -238,6 +276,32 @@ function TransactionForm(props: TransactionFormProps) {
             ))}
           </select>
         </div>
+
+        {type === 'transfer' && (
+          <div>
+            <label
+              htmlFor="transaction-destination-account"
+              className="block text-sm font-medium text-slate-700"
+            >
+              To account
+            </label>
+
+            <select
+              id="transaction-destination-account"
+              className={inputClassName}
+              value={destinationAccountId}
+              onChange={(event) => setDestinationAccountId(event.target.value)}
+              required
+              disabled={isSaving}
+            >
+              {destinationAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label htmlFor="transaction-date" className="block text-sm font-medium text-slate-700">

@@ -21,6 +21,12 @@ const testAccount: Account = {
   archivedAt: null,
 }
 
+const secondTestAccount: Account = {
+  ...testAccount,
+  id: 'account-2',
+  name: 'Savings account',
+}
+
 const archivedAccount: Account = {
   ...testAccount,
   id: 'account-archived',
@@ -37,6 +43,20 @@ const testExpense: Transaction = {
   categoryId: null,
   accountId: 'account-1',
   destinationAccountId: null,
+  date: '2026-11-09',
+  createdAt: '2026-11-09T10:00:00.000Z',
+  updatedAt: '2026-11-09T10:00:00.000Z',
+}
+
+const testTransfer: Transaction = {
+  id: 'transaction-transfer',
+  type: 'transfer',
+  amountMinor: 5000,
+  currency: 'USD',
+  description: 'Savings transfer',
+  categoryId: null,
+  accountId: 'account-1',
+  destinationAccountId: 'account-2',
   date: '2026-11-09',
   createdAt: '2026-11-09T10:00:00.000Z',
   updatedAt: '2026-11-09T10:00:00.000Z',
@@ -571,5 +591,127 @@ describe('TransactionsPage', () => {
     expect(screen.getByText('No transactions match your filters.')).toBeInTheDocument()
 
     expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+  })
+
+  it('displays only transfer transactions when the transfer filter is selected', () => {
+    render(
+      <TransactionsPage
+        transactions={[testExpense, testTransfer]}
+        accounts={[testAccount, secondTestAccount]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={vi.fn()}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByLabelText('Transaction type', {
+        selector: '#transaction-type-filter',
+      }),
+      { target: { value: 'transfer' } },
+    )
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.getByText('Savings transfer')).toBeInTheDocument()
+    expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
+  })
+
+  it('includes transfers when filtering by their destination account', () => {
+    render(
+      <TransactionsPage
+        transactions={[testExpense, testTransfer]}
+        accounts={[testAccount, secondTestAccount]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={vi.fn()}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByLabelText('Account', {
+        selector: '#transaction-account-filter',
+      }),
+      { target: { value: 'account-2' } },
+    )
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.getByText('Savings transfer')).toBeInTheDocument()
+    expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
+  })
+
+  it('displays both source and destination accounts for transfers', () => {
+    render(
+      <TransactionsPage
+        transactions={[testTransfer]}
+        accounts={[testAccount, secondTestAccount]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={vi.fn()}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('listitem')).toHaveTextContent('Visa card → Savings account')
+  })
+
+  it('displays transfer amounts without income or expense styling', () => {
+    render(
+      <TransactionsPage
+        transactions={[testTransfer]}
+        accounts={[testAccount, secondTestAccount]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={vi.fn()}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    const amount = screen.getByText('$50.00')
+
+    expect(amount).toBeInTheDocument()
+    expect(amount).not.toHaveClass('text-green-600')
+    expect(amount).not.toHaveClass('text-red-600')
+  })
+
+  it('disables editing transfers when the destination account is archived', () => {
+    const transferToArchivedAccount: Transaction = {
+      ...testTransfer,
+      destinationAccountId: archivedAccount.id,
+    }
+
+    render(
+      <TransactionsPage
+        transactions={[transferToArchivedAccount]}
+        accounts={[testAccount, archivedAccount]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={vi.fn()}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled()
+  })
+
+  it('allows editing transfers when both accounts are active', () => {
+    render(
+      <TransactionsPage
+        transactions={[testTransfer]}
+        accounts={[testAccount, secondTestAccount]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={vi.fn().mockResolvedValue(testTransfer)}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    const editButton = screen.getByRole('button', { name: 'Edit' })
+
+    expect(editButton).toBeEnabled()
+
+    fireEvent.click(editButton)
+
+    expect(screen.getByRole('heading', { name: 'Edit transaction' })).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Transaction type', {
+        selector: '#transaction-type',
+      }),
+    ).toHaveValue('transfer')
   })
 })

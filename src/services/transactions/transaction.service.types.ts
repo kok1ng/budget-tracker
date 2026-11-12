@@ -1,13 +1,23 @@
 import type { MoneyMinor } from '../../domain/money/money.types'
 
-export interface CreateTransactionInput {
-  type: 'income' | 'expense'
+interface BaseTransactionInput {
   amountMinor: MoneyMinor
   description: string
-  categoryId?: string | null
   accountId: string
   date: string
 }
+
+export type CreateTransactionInput =
+  | (BaseTransactionInput & {
+      type: 'income' | 'expense'
+      categoryId?: string | null
+      destinationAccountId?: never
+    })
+  | (BaseTransactionInput & {
+      type: 'transfer'
+      destinationAccountId: string
+      categoryId?: never
+    })
 
 export type UpdateTransactionInput = CreateTransactionInput
 

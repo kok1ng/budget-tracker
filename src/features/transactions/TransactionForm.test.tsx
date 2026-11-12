@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '../../domain/accounts/account.types'
@@ -45,6 +45,20 @@ const testTransaction: Transaction = {
   updatedAt: '2026-11-09T10:00:00.000Z',
 }
 
+const testTransfer: Transaction = {
+  id: 'transaction-2',
+  type: 'transfer',
+  amountMinor: 5000,
+  currency: 'USD',
+  description: 'Savings transfer',
+  categoryId: null,
+  accountId: 'account-1',
+  destinationAccountId: 'account-2',
+  date: '2026-11-09',
+  createdAt: '2026-11-09T10:00:00.000Z',
+  updatedAt: '2026-11-09T10:00:00.000Z',
+}
+
 function fillValidForm() {
   fireEvent.change(screen.getByLabelText('Amount'), {
     target: { value: '125.50' },
@@ -56,6 +70,32 @@ function fillValidForm() {
 
   fireEvent.change(screen.getByLabelText('Account'), {
     target: { value: 'account-1' },
+  })
+
+  fireEvent.change(screen.getByLabelText('Date'), {
+    target: { value: '2026-11-09' },
+  })
+}
+
+function fillValidTransferForm() {
+  fireEvent.change(screen.getByLabelText('Transaction type'), {
+    target: { value: 'transfer' },
+  })
+
+  fireEvent.change(screen.getByLabelText('Amount'), {
+    target: { value: '50.00' },
+  })
+
+  fireEvent.change(screen.getByLabelText('Description'), {
+    target: { value: 'Savings transfer' },
+  })
+
+  fireEvent.change(screen.getByLabelText('From account'), {
+    target: { value: 'account-1' },
+  })
+
+  fireEvent.change(screen.getByLabelText('To account'), {
+    target: { value: 'account-2' },
   })
 
   fireEvent.change(screen.getByLabelText('Date'), {
@@ -108,6 +148,38 @@ describe('TransactionForm', () => {
     expect(screen.getByRole('option', { name: 'Main account' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Savings account' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Archived account' })).not.toBeInTheDocument()
+  })
+
+  it('disables the transfer option when there is only one active account', () => {
+    render(
+      <TransactionForm mode="create" accounts={[activeAccount]} onCreateTransaction={vi.fn()} />,
+    )
+
+    expect(screen.getByRole('option', { name: 'Transfer' })).toBeDisabled()
+  })
+
+  it('enables the transfer option when there are at least two active accounts', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount, secondActiveAccount]}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('option', { name: 'Transfer' })).toBeEnabled()
+  })
+
+  it('does not count archived accounts when determining transfer availability', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount, archivedAccount]}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('option', { name: 'Transfer' })).toBeDisabled()
   })
 
   it('shows an explanatory message when there are no active accounts', () => {
@@ -429,5 +501,121 @@ describe('TransactionForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(onCancelEdit).toHaveBeenCalledOnce()
+  })
+
+  it('shows the destination account selector only for transfers', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount, secondActiveAccount]}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByLabelText('To account')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Transaction type'), {
+      target: { value: 'transfer' },
+    })
+
+    expect(screen.getByLabelText('To account')).toBeInTheDocument()
+  })
+
+  it('excludes the source account from destination options', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount, secondActiveAccount, archivedAccount]}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Transaction type'), {
+      target: { value: 'transfer' },
+    })
+
+    const destinationSelect = screen.getByLabelText('To account')
+    const destinationOptions = within(destinationSelect)
+
+    expect(destinationSelect).toHaveValue('account-2')
+
+    expect(
+      destinationOptions.queryByRole('option', { name: 'Main account' }),
+    ).not.toBeInTheDocument()
+
+    expect(destinationOptions.getByRole('option', { name: 'Savings account' })).toBeInTheDocument()
+
+    expect(
+      destinationOptions.queryByRole('option', { name: 'Archived account' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('changes the destination when the selected source becomes the destination', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount, secondActiveAccount]}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Transaction type'), {
+      target: { value: 'transfer' },
+    })
+
+    expect(screen.getByLabelText('To account')).toHaveValue('account-2')
+
+    fireEvent.change(screen.getByLabelText('From account'), {
+      target: { value: 'account-2' },
+    })
+
+    expect(screen.getByLabelText('To account')).toHaveValue('account-1')
+  })
+
+  it('creates a transfer with the expected input', async () => {
+    const onCreateTransaction = vi.fn().mockResolvedValue(testTransfer)
+
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount, secondActiveAccount]}
+        onCreateTransaction={onCreateTransaction}
+      />,
+    )
+
+    fillValidTransferForm()
+    submitForm()
+
+    await waitFor(() => {
+      expect(onCreateTransaction).toHaveBeenCalledWith({
+        type: 'transfer',
+        amountMinor: 5000,
+        description: 'Savings transfer',
+        accountId: 'account-1',
+        destinationAccountId: 'account-2',
+        date: '2026-11-09',
+      })
+    })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Transaction created successfully.')
+  })
+
+  it('renders the edit form with the selected transfer values', () => {
+    render(
+      <TransactionForm
+        mode="edit"
+        accounts={[activeAccount, secondActiveAccount]}
+        transaction={testTransfer}
+        onUpdateTransaction={vi.fn().mockResolvedValue(testTransfer)}
+        onCancelEdit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByLabelText('Transaction type')).toHaveValue('transfer')
+    expect(screen.getByLabelText('Amount')).toHaveValue('50.00')
+    expect(screen.getByLabelText('Description')).toHaveValue('Savings transfer')
+    expect(screen.getByLabelText('From account')).toHaveValue('account-1')
+    expect(screen.getByLabelText('To account')).toHaveValue('account-2')
+    expect(screen.getByLabelText('Date')).toHaveValue('2026-11-09')
   })
 })

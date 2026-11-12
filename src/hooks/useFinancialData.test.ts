@@ -237,6 +237,49 @@ describe('useFinancialData', () => {
     expect(repositoryMocks.transactionSave).toHaveBeenCalledOnce()
   })
 
+  it('adds a transfer to state after successful creation', async () => {
+  const secondAccount: Account = {
+    ...testAccount,
+    id: 'account-2',
+    name: 'Savings account',
+  }
+
+  accounts.push(secondAccount)
+
+  const { result } = renderHook(() => useFinancialData())
+
+  await waitFor(() => {
+    expect(result.current.accounts).toHaveLength(2)
+  })
+
+  let createdTransfer: Transaction | undefined
+
+  await act(async () => {
+    createdTransfer = await result.current.createTransaction({
+      type: 'transfer',
+      amountMinor: 30000,
+      description: 'Move money to savings',
+      accountId: 'account-1',
+      destinationAccountId: 'account-2',
+      date: '2026-11-07',
+    })
+  })
+
+  expect(createdTransfer).toMatchObject({
+    type: 'transfer',
+    amountMinor: 30000,
+    accountId: 'account-1',
+    destinationAccountId: 'account-2',
+    categoryId: null,
+  })
+
+  expect(result.current.transactions).toHaveLength(2)
+  expect(result.current.transactions[1]).toEqual(createdTransfer)
+
+  expect(repositoryMocks.transactionSave).toHaveBeenCalledOnce()
+  expect(repositoryMocks.transactionSave).toHaveBeenCalledWith(createdTransfer)
+})
+
   it('updates a transaction in state after successful update', async () => {
     const { result } = renderHook(() => useFinancialData())
 
@@ -263,6 +306,47 @@ describe('useFinancialData', () => {
     expect(repositoryMocks.transactionSave).toHaveBeenCalledOnce()
   })
 
+  it('updates a transaction into a transfer in state', async () => {
+  const secondAccount: Account = {
+    ...testAccount,
+    id: 'account-2',
+    name: 'Savings account',
+  }
+
+  accounts.push(secondAccount)
+
+  let updatedTransfer: Transaction | undefined
+
+  const { result } = renderHook(() => useFinancialData())
+
+  await waitFor(() => {
+    expect(result.current.isLoading).toBe(false)
+  })
+
+  await act(async () => {
+    updatedTransfer = await result.current.updateTransaction('transaction-existing', {
+      type: 'transfer',
+      amountMinor: 30000,
+      description: 'Move money to savings',
+      accountId: 'account-1',
+      destinationAccountId: 'account-2',
+      date: '2026-11-07',
+    })
+  })
+
+  expect(updatedTransfer).toMatchObject({
+    id: 'transaction-existing',
+    type: 'transfer',
+    destinationAccountId: 'account-2',
+    categoryId: null,
+  })
+
+  expect(result.current.transactions).toHaveLength(1)
+  expect(result.current.transactions[0]).toEqual(updatedTransfer)
+
+  expect(repositoryMocks.transactionSave).toHaveBeenCalledOnce()
+})
+
   it('removes a transaction from state after successful deletion', async () => {
     const { result } = renderHook(() => useFinancialData())
 
@@ -277,6 +361,46 @@ describe('useFinancialData', () => {
     expect(result.current.transactions).toEqual([])
     expect(repositoryMocks.transactionDelete).toHaveBeenCalledWith('transaction-existing')
   })
+
+  it('removes a transfer from state after successful deletion', async () => {
+  const secondAccount: Account = {
+    ...testAccount,
+    id: 'account-2',
+    name: 'Savings account',
+  }
+
+  const transfer: Transaction = {
+    id: 'transaction-transfer',
+    type: 'transfer',
+    amountMinor: 30000,
+    currency: 'USD',
+    description: 'Move money to savings',
+    categoryId: null,
+    accountId: 'account-1',
+    destinationAccountId: 'account-2',
+    date: '2026-11-07',
+    createdAt: '2026-11-07T10:00:00.000Z',
+    updatedAt: '2026-11-07T10:00:00.000Z',
+  }
+
+  accounts.push(secondAccount)
+  transactions = [transfer]
+
+  const { result } = renderHook(() => useFinancialData())
+
+  await waitFor(() => {
+    expect(result.current.transactions).toHaveLength(1)
+  })
+
+  await act(async () => {
+    await result.current.deleteTransaction('transaction-transfer')
+  })
+
+  expect(result.current.transactions).toEqual([])
+  expect(repositoryMocks.transactionDelete).toHaveBeenCalledWith(
+    'transaction-transfer',
+  )
+})
 
   it('keeps state unchanged when transaction creation fails', async () => {
     const { result } = renderHook(() => useFinancialData())

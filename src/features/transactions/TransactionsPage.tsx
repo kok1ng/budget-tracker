@@ -10,7 +10,7 @@ import type {
 import PageHeader from '../../components/ui/PageHeader'
 import TransactionForm from './TransactionForm'
 
-type TransactionTypeFilter = 'all' | 'income' | 'expense'
+type TransactionTypeFilter = 'all' | 'income' | 'expense' | 'transfer'
 
 type TransactionSortOrder = 'newest' | 'oldest'
 
@@ -41,7 +41,11 @@ function TransactionsPage({
       return typeFilter === 'all' || transaction.type === typeFilter
     })
     .filter((transaction) => {
-      return accountFilter === 'all' || transaction.accountId === accountFilter
+      return (
+        accountFilter === 'all' ||
+        transaction.accountId === accountFilter ||
+        transaction.destinationAccountId === accountFilter
+      )
     })
     .sort((a, b) => {
       return sortOrder === 'newest' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
@@ -85,7 +89,7 @@ function TransactionsPage({
   }
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <PageHeader title="Transactions" description="Manage your income and expenses." />
+      <PageHeader title="Transactions" description="Manage your income, expenses, and transfers." />
       {deleteError !== null && (
         <p role="alert" className="text-sm text-red-600">
           {deleteError}
@@ -128,6 +132,7 @@ function TransactionsPage({
               <option value="all">All types</option>
               <option value="income">Income</option>
               <option value="expense">Expenses</option>
+              <option value="transfer">Transfers</option>
             </select>
           </div>
 
@@ -190,22 +195,47 @@ function TransactionsPage({
             {filteredTransactions.map((transaction) => {
               const account = accounts.find((item) => item.id === transaction.accountId)
 
+              const destinationAccount =
+                transaction.type === 'transfer' && transaction.destinationAccountId !== null
+                  ? accounts.find((item) => item.id === transaction.destinationAccountId)
+                  : undefined
+
+              const isDestinationAccountUnavailable =
+                transaction.type === 'transfer' &&
+                (destinationAccount === undefined || destinationAccount.archivedAt !== null)
+
               return (
                 <li key={transaction.id} className="flex items-center justify-between gap-4">
                   <div>
                     <p className="font-medium">{transaction.description}</p>
                     <p className="text-sm text-slate-500">
-                      {account?.name ?? 'Unknown account'} · {transaction.date}
+                      {transaction.type === 'transfer' ? (
+                        <>
+                          {account?.name ?? 'Unknown account'} →{' '}
+                          {destinationAccount?.name ?? 'Unknown account'}
+                        </>
+                      ) : (
+                        (account?.name ?? 'Unknown account')
+                      )}{' '}
+                      · {transaction.date}
                     </p>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-4">
                     <p
                       className={`font-semibold ${
-                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                        transaction.type === 'income'
+                          ? 'text-green-600'
+                          : transaction.type === 'expense'
+                            ? 'text-red-600'
+                            : 'text-slate-700'
                       }`}
                     >
-                      {transaction.type === 'income' ? '+' : '−'}
+                      {transaction.type === 'income'
+                        ? '+'
+                        : transaction.type === 'expense'
+                          ? '−'
+                          : ''}
                       {formatMoney(transaction.amountMinor, transaction.currency)}
                     </p>
 
@@ -215,7 +245,8 @@ function TransactionsPage({
                       disabled={
                         deletingTransactionId === transaction.id ||
                         account === undefined ||
-                        account.archivedAt !== null
+                        account.archivedAt !== null ||
+                        isDestinationAccountUnavailable
                       }
                       className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
