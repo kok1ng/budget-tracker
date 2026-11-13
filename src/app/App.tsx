@@ -33,7 +33,13 @@ function App() {
   function renderPage() {
     switch (activePage) {
       case 'dashboard':
-        return <DashboardPage transactions={transactions} />
+        return (
+          <DashboardPage
+            accounts={accounts}
+            transactions={transactions}
+            onPageChange={setActivePage}
+          />
+        )
       case 'transactions':
         return (
           <TransactionsPage

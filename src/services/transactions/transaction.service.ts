@@ -1,4 +1,3 @@
-
 import { calculateAccountBalance } from '../../domain/accounts/account.calculations'
 import { isValidTransaction } from '../../domain/transactions/transaction.validation'
 import type { Account } from '../../domain/accounts/account.types'

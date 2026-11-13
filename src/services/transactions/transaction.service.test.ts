@@ -350,7 +350,6 @@ describe('createTransaction', () => {
     expect(transactions).toEqual([existingTransaction])
   })
 
-
   it('creates a transfer transaction and saves it', async () => {
     const result = await service.createTransaction({
       type: 'transfer',
@@ -760,123 +759,122 @@ describe('updateTransaction', () => {
     expect(transactions[0]).toEqual(result)
   })
 
-it('allows changing an expense transaction into a transfer', async () => {
-  const result = await service.updateTransaction('transaction-existing', {
-    type: 'transfer',
-    amountMinor: 30000,
-    description: 'Move money to savings',
-    accountId: 'account-1',
-    destinationAccountId: 'account-3',
-    date: '2026-11-06',
-  })
-
-  expect(result.type).toBe('transfer')
-  expect(result.destinationAccountId).toBe('account-3')
-  expect(result.categoryId).toBeNull()
-  expect(transactions).toHaveLength(1)
-  expect(transactions[0]).toEqual(result)
-})
-
-it('allows changing a transfer transaction into an expense', async () => {
-  const transferTransaction: Transaction = {
-    ...existingTransaction,
-    type: 'transfer',
-    amountMinor: 20000,
-    destinationAccountId: 'account-3',
-  }
-
-  transactions = [transferTransaction]
-
-  const result = await service.updateTransaction(transferTransaction.id, {
-    type: 'expense',
-    amountMinor: 20000,
-    description: 'Purchase',
-    accountId: 'account-1',
-    date: '2026-11-06',
-  })
-
-  expect(result.type).toBe('expense')
-  expect(result.destinationAccountId).toBeNull()
-  expect(result.categoryId).toBeNull()
-  expect(transactions).toEqual([result])
-})
-
-it('allows changing the source and destination accounts of a transfer', async () => {
-  const transferTransaction: Transaction = {
-    ...existingTransaction,
-    type: 'transfer',
-    amountMinor: 10000,
-    destinationAccountId: 'account-3',
-  }
-
-  transactions = [transferTransaction]
-
-  const result = await service.updateTransaction(transferTransaction.id, {
-    type: 'transfer',
-    amountMinor: 10000,
-    description: 'Reverse transfer',
-    accountId: 'account-3',
-    destinationAccountId: 'account-1',
-    date: '2026-11-06',
-  })
-
-  expect(result.accountId).toBe('account-3')
-  expect(result.destinationAccountId).toBe('account-1')
-  expect(transactions).toEqual([result])
-})
-
-it('rejects changing a transfer when its original destination balance would become negative', async () => {
-  const transferTransaction: Transaction = {
-    ...existingTransaction,
-    type: 'transfer',
-    amountMinor: 20000,
-    destinationAccountId: 'account-3',
-  }
-
-  const destinationExpense: Transaction = {
-    ...existingTransaction,
-    id: 'transaction-destination-expense',
-    type: 'expense',
-    amountMinor: 40000,
-    accountId: 'account-3',
-  }
-
-  transactions = [transferTransaction, destinationExpense]
-
-  await expect(
-    service.updateTransaction(transferTransaction.id, {
-      type: 'expense',
-      amountMinor: 20000,
-      description: 'Changed transaction',
-      accountId: 'account-1',
-      date: '2026-11-06',
-    }),
-  ).rejects.toMatchObject({
-    name: 'TransactionOperationError',
-    code: 'INSUFFICIENT_BALANCE',
-  })
-
-  expect(transactions).toEqual([transferTransaction, destinationExpense])
-})
-
-it('rejects changing an expense into a transfer when the source balance would become negative', async () => {
-  await expect(
-    service.updateTransaction('transaction-existing', {
+  it('allows changing an expense transaction into a transfer', async () => {
+    const result = await service.updateTransaction('transaction-existing', {
       type: 'transfer',
-      amountMinor: 110000,
-      description: 'Over-budget transfer',
+      amountMinor: 30000,
+      description: 'Move money to savings',
       accountId: 'account-1',
       destinationAccountId: 'account-3',
       date: '2026-11-06',
-    }),
-  ).rejects.toMatchObject({
-    name: 'TransactionOperationError',
-    code: 'INSUFFICIENT_BALANCE',
+    })
+
+    expect(result.type).toBe('transfer')
+    expect(result.destinationAccountId).toBe('account-3')
+    expect(result.categoryId).toBeNull()
+    expect(transactions).toHaveLength(1)
+    expect(transactions[0]).toEqual(result)
   })
 
-  expect(transactions).toEqual([existingTransaction])
-})
+  it('allows changing a transfer transaction into an expense', async () => {
+    const transferTransaction: Transaction = {
+      ...existingTransaction,
+      type: 'transfer',
+      amountMinor: 20000,
+      destinationAccountId: 'account-3',
+    }
 
+    transactions = [transferTransaction]
+
+    const result = await service.updateTransaction(transferTransaction.id, {
+      type: 'expense',
+      amountMinor: 20000,
+      description: 'Purchase',
+      accountId: 'account-1',
+      date: '2026-11-06',
+    })
+
+    expect(result.type).toBe('expense')
+    expect(result.destinationAccountId).toBeNull()
+    expect(result.categoryId).toBeNull()
+    expect(transactions).toEqual([result])
+  })
+
+  it('allows changing the source and destination accounts of a transfer', async () => {
+    const transferTransaction: Transaction = {
+      ...existingTransaction,
+      type: 'transfer',
+      amountMinor: 10000,
+      destinationAccountId: 'account-3',
+    }
+
+    transactions = [transferTransaction]
+
+    const result = await service.updateTransaction(transferTransaction.id, {
+      type: 'transfer',
+      amountMinor: 10000,
+      description: 'Reverse transfer',
+      accountId: 'account-3',
+      destinationAccountId: 'account-1',
+      date: '2026-11-06',
+    })
+
+    expect(result.accountId).toBe('account-3')
+    expect(result.destinationAccountId).toBe('account-1')
+    expect(transactions).toEqual([result])
+  })
+
+  it('rejects changing a transfer when its original destination balance would become negative', async () => {
+    const transferTransaction: Transaction = {
+      ...existingTransaction,
+      type: 'transfer',
+      amountMinor: 20000,
+      destinationAccountId: 'account-3',
+    }
+
+    const destinationExpense: Transaction = {
+      ...existingTransaction,
+      id: 'transaction-destination-expense',
+      type: 'expense',
+      amountMinor: 40000,
+      accountId: 'account-3',
+    }
+
+    transactions = [transferTransaction, destinationExpense]
+
+    await expect(
+      service.updateTransaction(transferTransaction.id, {
+        type: 'expense',
+        amountMinor: 20000,
+        description: 'Changed transaction',
+        accountId: 'account-1',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'INSUFFICIENT_BALANCE',
+    })
+
+    expect(transactions).toEqual([transferTransaction, destinationExpense])
+  })
+
+  it('rejects changing an expense into a transfer when the source balance would become negative', async () => {
+    await expect(
+      service.updateTransaction('transaction-existing', {
+        type: 'transfer',
+        amountMinor: 110000,
+        description: 'Over-budget transfer',
+        accountId: 'account-1',
+        destinationAccountId: 'account-3',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'INSUFFICIENT_BALANCE',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
 })
 
 describe('deleteTransaction', () => {

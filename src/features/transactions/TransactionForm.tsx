@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 
 import type { Account } from '../../domain/accounts/account.types'
 import { parseAmountToMinorUnits } from '../shared/money-input.utils'
+import { getLocalDateString } from '../shared/date.utils'
 import type {
   CreateTransactionInput,
   UpdateTransactionInput,
@@ -27,15 +28,6 @@ type TransactionFormProps = TransactionFormCommonProps &
   )
 
 type FormTransactionType = 'income' | 'expense' | 'transfer'
-
-function getLocalDateString(): string {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
 
 function formatMinorUnitsForInput(amountMinor: number): string {
   const wholeUnits = Math.floor(amountMinor / 100)
