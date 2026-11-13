@@ -6,6 +6,7 @@ export type AccountOperationErrorCode =
   | 'ACCOUNT_BALANCE_NOT_ZERO'
   | 'ACCOUNT_ALREADY_ARCHIVED'
   | 'ACCOUNT_NOT_ARCHIVED'
+  | 'CURRENCY_MISMATCH'
 
 export class AccountOperationError extends Error {
   public readonly code: AccountOperationErrorCode

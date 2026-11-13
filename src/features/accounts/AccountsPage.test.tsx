@@ -299,4 +299,78 @@ describe('AccountsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Account has transactions.')
     expect(screen.getByRole('heading', { name: 'Delete Main account?' })).toBeInTheDocument()
   })
+
+  it('allows choosing a currency when no accounts exist', () => {
+    renderAccountsPage([])
+
+    const currencySelect = screen.getByLabelText('Currency')
+
+    expect(currencySelect).toBeEnabled()
+    expect(currencySelect).toHaveValue('USD')
+  })
+
+  it('locks the currency selector to the existing account currency', () => {
+    renderAccountsPage()
+
+    const currencySelect = screen.getByLabelText('Currency')
+
+    expect(currencySelect).toBeDisabled()
+    expect(currencySelect).toHaveValue('USD')
+  })
+
+  it('uses the currency of an archived account', () => {
+    const archivedEuroAccount: Account = {
+      ...archivedAccount,
+      currency: 'EUR',
+    }
+
+    renderAccountsPage([archivedEuroAccount])
+
+    const currencySelect = screen.getByLabelText('Currency')
+
+    expect(currencySelect).toBeDisabled()
+    expect(currencySelect).toHaveValue('EUR')
+  })
+
+  it('submits the selected currency when creating the first account', async () => {
+    const onCreateAccount = vi.fn().mockResolvedValue({
+      ...testAccount,
+      currency: 'EUR',
+    })
+
+    render(
+      <AccountsPage
+        accounts={[]}
+        transactions={[]}
+        onCreateAccount={onCreateAccount}
+        onUpdateAccount={vi.fn().mockResolvedValue(testAccount)}
+        onDeleteAccount={vi.fn().mockResolvedValue(undefined)}
+        onArchiveAccount={vi.fn().mockResolvedValue(testAccount)}
+        onRestoreAccount={vi.fn().mockResolvedValue(archivedAccount)}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Account name'), {
+      target: { value: 'Euro account' },
+    })
+
+    fireEvent.change(screen.getByLabelText('Currency'), {
+      target: { value: 'EUR' },
+    })
+
+    fireEvent.change(screen.getByLabelText('Opening balance'), {
+      target: { value: '500.00' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add account' }))
+
+    await waitFor(() => {
+      expect(onCreateAccount).toHaveBeenCalledWith({
+        name: 'Euro account',
+        type: 'debit_card',
+        currency: 'EUR',
+        openingBalanceMinor: 50000,
+      })
+    })
+  })
 })

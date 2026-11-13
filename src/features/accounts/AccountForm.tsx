@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
 
 import type { AccountType, CreateAccountInput } from '../../domain/accounts/account.types'
+import type { CurrencyCode } from '../../domain/money/money.types'
 import { parseAmountToMinorUnits } from '../shared/money-input.utils'
 
 interface AccountFormProps {
+  establishedCurrency: CurrencyCode | null
   onCreateAccount: (input: CreateAccountInput) => Promise<unknown>
 }
 
@@ -14,7 +16,7 @@ const accountTypes: { value: AccountType; label: string }[] = [
   { value: 'savings', label: 'Savings' },
 ]
 
-function AccountForm({ onCreateAccount }: AccountFormProps) {
+function AccountForm({ establishedCurrency, onCreateAccount }: AccountFormProps) {
   const [name, setName] = useState('')
   const [type, setType] = useState<AccountType>('debit_card')
   const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD')
@@ -48,7 +50,7 @@ function AccountForm({ onCreateAccount }: AccountFormProps) {
       await onCreateAccount({
         name: name.trim(),
         type,
-        currency,
+        currency: establishedCurrency ?? currency,
         openingBalanceMinor: amountMinor,
       })
 
@@ -118,9 +120,9 @@ function AccountForm({ onCreateAccount }: AccountFormProps) {
           <select
             id="account-currency"
             className={inputClassName}
-            value={currency}
-            onChange={(event) => setCurrency(event.target.value as 'USD' | 'EUR')}
-            disabled={isSaving}
+            value={establishedCurrency ?? currency}
+            onChange={(event) => setCurrency(event.target.value as CurrencyCode)}
+            disabled={isSaving || establishedCurrency !== null}
           >
             <option value="USD">USD</option>
             <option value="EUR">EUR</option>

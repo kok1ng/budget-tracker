@@ -68,6 +68,13 @@ export class AccountService {
       throw new AccountOperationError('INVALID_ACCOUNT', 'The generated account ID already exists.')
     }
 
+    if (accounts.some((existing) => existing.currency !== account.currency)) {
+      throw new AccountOperationError(
+        'CURRENCY_MISMATCH',
+        'All accounts must use the same currency.',
+      )
+    }
+
     createAccountOperation(accounts, account)
 
     await this.accountRepository.save(account)

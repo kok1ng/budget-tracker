@@ -188,6 +188,70 @@ describe('AccountService', () => {
 
       expect(accounts).toHaveLength(1)
     })
+
+    it('should allow creating the first account with EUR currency', async () => {
+      accounts = []
+
+      await service.createAccount({
+        name: 'Euro account',
+        type: 'bank_account',
+        currency: 'EUR',
+        openingBalanceMinor: 50000,
+      })
+
+      expect(accounts).toHaveLength(1)
+      expect(accounts[0].currency).toBe('EUR')
+    })
+
+    it('should reject creating an account with a different currency', async () => {
+      await expect(
+        service.createAccount({
+          name: 'Euro account',
+          type: 'cash',
+          currency: 'EUR',
+          openingBalanceMinor: 50000,
+        }),
+      ).rejects.toMatchObject({
+        name: 'AccountOperationError',
+        code: 'CURRENCY_MISMATCH',
+      })
+
+      expect(accounts).toHaveLength(1)
+    })
+
+    it('should reject a different currency when the existing account is archived', async () => {
+      accounts[0] = {
+        ...testAccount,
+        archivedAt: '2026-11-06T11:00:00.000Z',
+      }
+
+      await expect(
+        service.createAccount({
+          name: 'Euro account',
+          type: 'cash',
+          currency: 'EUR',
+          openingBalanceMinor: 50000,
+        }),
+      ).rejects.toMatchObject({
+        code: 'CURRENCY_MISMATCH',
+      })
+
+      expect(accounts).toHaveLength(1)
+    })
+
+    it('should allow selecting a new currency after the last account is deleted', async () => {
+      await service.deleteAccount('account-1')
+
+      await service.createAccount({
+        name: 'Euro account',
+        type: 'bank_account',
+        currency: 'EUR',
+        openingBalanceMinor: 50000,
+      })
+
+      expect(accounts).toHaveLength(1)
+      expect(accounts[0].currency).toBe('EUR')
+    })
   })
 
   describe('updateAccount', () => {

@@ -34,6 +34,7 @@ function AccountsPage({
   const [actionError, setActionError] = useState<string | null>(null)
 
   const activeAccounts = accounts.filter((account) => account.archivedAt === null)
+  const establishedCurrency = accounts[0]?.currency ?? null
   const archivedAccounts = accounts.filter((account) => account.archivedAt !== null)
   const deletingArchivedAccount = accountToDelete !== null && accountToDelete.archivedAt !== null
 
@@ -88,7 +89,7 @@ function AccountsPage({
     <div className="mx-auto max-w-6xl space-y-8">
       <PageHeader title="Accounts" description="Manage your accounts and track their balances." />
 
-      <AccountForm onCreateAccount={onCreateAccount} />
+      <AccountForm establishedCurrency={establishedCurrency} onCreateAccount={onCreateAccount} />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Active accounts</h2>
