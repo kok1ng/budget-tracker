@@ -21,6 +21,16 @@ export interface DashboardData {
   accountBalances: DashboardAccountBalance[]
 }
 
+function addSafeIntegers(total: number, amount: number): number {
+  const result = total + amount
+
+  if (!Number.isSafeInteger(result)) {
+    throw new RangeError('Dashboard total exceeds the safe integer limit')
+  }
+
+  return result
+}
+
 export function calculateDashboardData(
   accounts: Account[],
   transactions: Transaction[],
@@ -36,11 +46,11 @@ export function calculateDashboardData(
 
   const monthlyIncomeMinor = monthlyTransactions
     .filter((transaction) => transaction.type === 'income')
-    .reduce((total, transaction) => total + transaction.amountMinor, 0)
+    .reduce((total, transaction) => addSafeIntegers(total, transaction.amountMinor), 0)
 
   const monthlyExpensesMinor = monthlyTransactions
     .filter((transaction) => transaction.type === 'expense')
-    .reduce((total, transaction) => total + transaction.amountMinor, 0)
+    .reduce((total, transaction) => addSafeIntegers(total, transaction.amountMinor), 0)
 
   const recentTransactions = [...transactions]
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -56,7 +66,7 @@ export function calculateDashboardData(
     totalBalanceMinor: calculateTotalBalance(activeAccounts, transactions),
     monthlyIncomeMinor,
     monthlyExpensesMinor,
-    netCashFlowMinor: monthlyIncomeMinor - monthlyExpensesMinor,
+    netCashFlowMinor: addSafeIntegers(monthlyIncomeMinor, -monthlyExpensesMinor),
     recentTransactions,
     accountBalances,
   }

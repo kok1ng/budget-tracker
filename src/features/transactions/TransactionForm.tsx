@@ -73,6 +73,7 @@ function TransactionForm(props: TransactionFormProps) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const destinationAccounts = activeAccounts.filter((account) => account.id !== accountId)
+  const fieldIdPrefix = props.mode === 'create' ? 'transaction' : 'edit-transaction'
 
   if (activeAccounts.length === 0) {
     return (
@@ -177,18 +178,28 @@ function TransactionForm(props: TransactionFormProps) {
     'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-100'
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">
+    <section
+      className={
+        props.mode === 'create' ? 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm' : ''
+      }
+    >
+      <h2
+        id={props.mode === 'edit' ? 'edit-transaction-title' : undefined}
+        className="text-lg font-semibold text-slate-900"
+      >
         {props.mode === 'create' ? 'Add transaction' : 'Edit transaction'}
       </h2>
 
       <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="transaction-type" className="block text-sm font-medium text-slate-700">
+          <label
+            htmlFor={`${fieldIdPrefix}-type`}
+            className="block text-sm font-medium text-slate-700"
+          >
             Transaction type
           </label>
           <select
-            id="transaction-type"
+            id={`${fieldIdPrefix}-type`}
             className={inputClassName}
             value={type}
             onChange={(event) => setType(event.target.value as FormTransactionType)}
@@ -203,11 +214,14 @@ function TransactionForm(props: TransactionFormProps) {
         </div>
 
         <div>
-          <label htmlFor="transaction-amount" className="block text-sm font-medium text-slate-700">
+          <label
+            htmlFor={`${fieldIdPrefix}-amount`}
+            className="block text-sm font-medium text-slate-700"
+          >
             Amount
           </label>
           <input
-            id="transaction-amount"
+            id={`${fieldIdPrefix}-amount`}
             type="text"
             inputMode="decimal"
             autoComplete="off"
@@ -223,13 +237,13 @@ function TransactionForm(props: TransactionFormProps) {
 
         <div>
           <label
-            htmlFor="transaction-description"
+            htmlFor={`${fieldIdPrefix}-description`}
             className="block text-sm font-medium text-slate-700"
           >
             Description
           </label>
           <input
-            id="transaction-description"
+            id={`${fieldIdPrefix}-description`}
             type="text"
             className={inputClassName}
             placeholder="e.g. Groceries"
@@ -241,11 +255,14 @@ function TransactionForm(props: TransactionFormProps) {
         </div>
 
         <div>
-          <label htmlFor="transaction-account" className="block text-sm font-medium text-slate-700">
+          <label
+            htmlFor={`${fieldIdPrefix}-account`}
+            className="block text-sm font-medium text-slate-700"
+          >
             {type === 'transfer' ? 'From account' : 'Account'}
           </label>
           <select
-            id="transaction-account"
+            id={`${fieldIdPrefix}-account`}
             className={inputClassName}
             value={accountId}
             onChange={(event) => {
@@ -272,14 +289,14 @@ function TransactionForm(props: TransactionFormProps) {
         {type === 'transfer' && (
           <div>
             <label
-              htmlFor="transaction-destination-account"
+              htmlFor={`${fieldIdPrefix}-destination-account`}
               className="block text-sm font-medium text-slate-700"
             >
               To account
             </label>
 
             <select
-              id="transaction-destination-account"
+              id={`${fieldIdPrefix}-destination-account`}
               className={inputClassName}
               value={destinationAccountId}
               onChange={(event) => setDestinationAccountId(event.target.value)}
@@ -296,11 +313,14 @@ function TransactionForm(props: TransactionFormProps) {
         )}
 
         <div>
-          <label htmlFor="transaction-date" className="block text-sm font-medium text-slate-700">
+          <label
+            htmlFor={`${fieldIdPrefix}-date`}
+            className="block text-sm font-medium text-slate-700"
+          >
             Date
           </label>
           <input
-            id="transaction-date"
+            id={`${fieldIdPrefix}-date`}
             type="date"
             className={inputClassName}
             value={date}
@@ -322,24 +342,26 @@ function TransactionForm(props: TransactionFormProps) {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSaving ? 'Saving...' : props.mode === 'create' ? 'Add transaction' : 'Save changes'}
-        </button>
+        <div className="flex justify-end gap-3">
+          {props.mode === 'edit' && (
+            <button
+              type="button"
+              onClick={props.onCancelEdit}
+              disabled={isSaving}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          )}
 
-        {props.mode === 'edit' && (
           <button
-            type="button"
-            onClick={props.onCancelEdit}
+            type="submit"
             disabled={isSaving}
-            className="ml-3 rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Cancel
+            {isSaving ? 'Saving...' : props.mode === 'create' ? 'Add transaction' : 'Save changes'}
           </button>
-        )}
+        </div>
       </form>
     </section>
   )

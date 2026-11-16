@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '../../domain/accounts/account.types'
@@ -117,7 +117,7 @@ describe('TransactionsPage', () => {
     expect(screen.getByText('Your transactions will appear here.')).toBeInTheDocument()
   })
 
-  it('opens the edit form with the selected transaction values', () => {
+  it('opens the edit dialog with the selected transaction values', () => {
     render(
       <TransactionsPage
         transactions={[testExpense]}
@@ -130,23 +130,45 @@ describe('TransactionsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
 
-    expect(screen.getByRole('heading', { name: 'Edit transaction' })).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog')
+
+    expect(dialog).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Edit transaction' })).toBeInTheDocument()
+
+    expect(screen.getByRole('heading', { name: 'Add transaction' })).toBeInTheDocument()
+
     expect(
-      screen.getByLabelText('Transaction type', {
-        selector: '#transaction-type',
+      within(dialog).getByLabelText('Transaction type', {
+        selector: '#edit-transaction-type',
       }),
     ).toHaveValue('expense')
-    expect(screen.getByLabelText('Amount')).toHaveValue('100.00')
-    expect(screen.getByLabelText('Description')).toHaveValue('Groceries')
+
     expect(
-      screen.getByLabelText('Account', {
-        selector: '#transaction-account',
+      within(dialog).getByLabelText('Amount', {
+        selector: '#edit-transaction-amount',
+      }),
+    ).toHaveValue('100.00')
+
+    expect(
+      within(dialog).getByLabelText('Description', {
+        selector: '#edit-transaction-description',
+      }),
+    ).toHaveValue('Groceries')
+
+    expect(
+      within(dialog).getByLabelText('Account', {
+        selector: '#edit-transaction-account',
       }),
     ).toHaveValue('account-1')
-    expect(screen.getByLabelText('Date')).toHaveValue('2026-11-09')
+
+    expect(
+      within(dialog).getByLabelText('Date', {
+        selector: '#edit-transaction-date',
+      }),
+    ).toHaveValue('2026-11-09')
   })
 
-  it('updates the selected transaction and returns to creation mode', async () => {
+  it('updates the selected transaction and closes the edit dialog', async () => {
     const onUpdateTransaction = vi.fn().mockResolvedValue({
       ...testExpense,
       description: 'Updated groceries',
@@ -164,11 +186,18 @@ describe('TransactionsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
 
-    fireEvent.change(screen.getByLabelText('Description'), {
-      target: { value: 'Updated groceries' },
-    })
+    const dialog = screen.getByRole('dialog')
 
-    const form = screen.getByRole('button', { name: 'Save changes' }).closest('form')
+    fireEvent.change(
+      within(dialog).getByLabelText('Description', {
+        selector: '#edit-transaction-description',
+      }),
+      {
+        target: { value: 'Updated groceries' },
+      },
+    )
+
+    const form = within(dialog).getByRole('button', { name: 'Save changes' }).closest('form')
 
     if (!form) {
       throw new Error('Edit transaction form was not found.')
@@ -187,9 +216,59 @@ describe('TransactionsPage', () => {
       })
     })
 
-    expect(await screen.findByRole('heading', { name: 'Add transaction' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
 
-    expect(screen.queryByRole('heading', { name: 'Edit transaction' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Add transaction' })).toBeInTheDocument()
+  })
+
+  it('keeps the edit dialog open and preserves values when updating fails', async () => {
+    const onUpdateTransaction = vi.fn().mockRejectedValue(new Error('Insufficient balance'))
+
+    render(
+      <TransactionsPage
+        transactions={[testExpense]}
+        accounts={[testAccount]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={onUpdateTransaction}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+
+    const dialog = screen.getByRole('dialog')
+
+    const descriptionInput = within(dialog).getByLabelText('Description', {
+      selector: '#edit-transaction-description',
+    })
+
+    fireEvent.change(descriptionInput, {
+      target: { value: 'Updated groceries' },
+    })
+
+    const form = within(dialog).getByRole('button', { name: 'Save changes' }).closest('form')
+
+    if (!form) {
+      throw new Error('Edit transaction form was not found.')
+    }
+
+    fireEvent.submit(form)
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Insufficient balance')
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(descriptionInput).toHaveValue('Updated groceries')
+
+    expect(onUpdateTransaction).toHaveBeenCalledWith('transaction-1', {
+      type: 'expense',
+      amountMinor: 10000,
+      description: 'Updated groceries',
+      categoryId: null,
+      accountId: 'account-1',
+      date: '2026-11-09',
+    })
   })
 
   it('cancels editing without calling the update callback', () => {
@@ -206,10 +285,13 @@ describe('TransactionsPage', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Add transaction' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Edit transaction' })).not.toBeInTheDocument()
     expect(onUpdateTransaction).not.toHaveBeenCalled()
   })
 
@@ -710,7 +792,7 @@ describe('TransactionsPage', () => {
     expect(screen.getByRole('heading', { name: 'Edit transaction' })).toBeInTheDocument()
     expect(
       screen.getByLabelText('Transaction type', {
-        selector: '#transaction-type',
+        selector: '#edit-transaction-type',
       }),
     ).toHaveValue('transfer')
   })

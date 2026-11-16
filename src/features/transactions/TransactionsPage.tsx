@@ -9,6 +9,7 @@ import type {
 
 import PageHeader from '../../components/ui/PageHeader'
 import TransactionForm from './TransactionForm'
+import TransactionEditDialog from './TransactionEditDialog'
 
 type TransactionTypeFilter = 'all' | 'income' | 'expense' | 'transfer'
 
@@ -96,20 +97,19 @@ function TransactionsPage({
         </p>
       )}
 
-      {editingTransaction === null ? (
-        <TransactionForm
-          mode="create"
-          accounts={accounts}
-          onCreateTransaction={onCreateTransaction}
-        />
-      ) : (
-        <TransactionForm
+      <TransactionForm
+        mode="create"
+        accounts={accounts}
+        onCreateTransaction={onCreateTransaction}
+      />
+
+      {editingTransaction !== null && (
+        <TransactionEditDialog
           key={editingTransaction.id}
-          mode="edit"
-          accounts={accounts}
           transaction={editingTransaction}
+          accounts={accounts}
           onUpdateTransaction={handleUpdateTransaction}
-          onCancelEdit={() => setEditingTransaction(null)}
+          onClose={() => setEditingTransaction(null)}
         />
       )}
 

@@ -200,4 +200,25 @@ describe('calculateDashboardData', () => {
     expect(result.totalBalanceMinor).toBe(0)
     expect(result.accountBalances).toEqual([])
   })
+
+  it.each(['income', 'expense'] as const)('rejects an unsafe monthly %s total', (type) => {
+    const transactions = [
+      createTransaction({
+        id: `${type}-1`,
+        date: '2026-11-10',
+        type,
+        amountMinor: Number.MAX_SAFE_INTEGER,
+      }),
+      createTransaction({
+        id: `${type}-2`,
+        date: '2026-11-11',
+        type,
+        amountMinor: Number.MAX_SAFE_INTEGER,
+      }),
+    ]
+
+    expect(() => calculateDashboardData([archivedAccount], transactions, '2026-11-13')).toThrow(
+      RangeError,
+    )
+  })
 })
