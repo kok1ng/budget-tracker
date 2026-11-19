@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
-import type { AccountRepository } from '../storage/repositories/account.repository'
-import type { TransactionRepository } from '../storage/repositories/transaction.repository'
+import type { AccountRepository } from '../storage/repositories/accounts/account.repository'
+import type { TransactionRepository } from '../storage/repositories/transactions/transaction.repository'
 import { AccountService } from './account.service'
 
 const testAccount: Account = {

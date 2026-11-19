@@ -1,6 +1,6 @@
-import type { Account } from '../../../domain/accounts/account.types'
-import { isValidAccount } from '../../../domain/accounts/account.validation'
-import { readStorageCollection, writeStorageCollection } from '../storage-collection.utils'
+import type { Account } from '../../../../domain/accounts/account.types'
+import { isValidAccount } from '../../../../domain/accounts/account.validation'
+import { readStorageCollection, writeStorageCollection } from '../../storage-collection.utils'
 import type { AccountRepository } from './account.repository'
 
 const ACCOUNTS_STORAGE_KEY = 'budget-tracker:accounts'

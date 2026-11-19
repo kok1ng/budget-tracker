@@ -10,8 +10,8 @@ import {
 
 import type { Account, CreateAccountInput } from '../../domain/accounts/account.types'
 
-import type { AccountRepository } from '../storage/repositories/account.repository'
-import type { TransactionRepository } from '../storage/repositories/transaction.repository'
+import type { AccountRepository } from '../storage/repositories/accounts/account.repository'
+import type { TransactionRepository } from '../storage/repositories/transactions/transaction.repository'
 
 import { AccountOperationError } from './account-operation.errors'
 import type { UpdateAccountInput } from './account.service.types'

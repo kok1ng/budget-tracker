@@ -58,14 +58,10 @@ describe('isValidCategory', () => {
   })
 
   it('returns false when createdAt is not canonical ISO format', () => {
-    expect(isValidCategory({ ...validCategory, createdAt: '2026-11-18T12:00:00Z' })).toBe(
-      false,
-    )
+    expect(isValidCategory({ ...validCategory, createdAt: '2026-11-18T12:00:00Z' })).toBe(false)
   })
 
   it('returns false when updatedAt is not canonical ISO format', () => {
-    expect(isValidCategory({ ...validCategory, updatedAt: '2026-11-18T12:00:00Z' })).toBe(
-      false,
-    )
+    expect(isValidCategory({ ...validCategory, updatedAt: '2026-11-18T12:00:00Z' })).toBe(false)
   })
 })

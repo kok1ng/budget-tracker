@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readStorageCollection, writeStorageCollection } from '../storage-collection.utils'
+import { readStorageCollection, writeStorageCollection } from '../../storage-collection.utils'
 import { LocalStorageAccountRepository } from './account.local-storage.repository'
-import type { Account } from '../../../domain/accounts/account.types'
+import type { Account } from '../../../../domain/accounts/account.types'
 
-vi.mock('../storage-collection.utils', () => ({
+vi.mock('../../storage-collection.utils', () => ({
   readStorageCollection: vi.fn(),
   writeStorageCollection: vi.fn(),
 }))

@@ -19,7 +19,7 @@ const repositoryMocks = vi.hoisted(() => ({
   transactionDelete: vi.fn(),
 }))
 
-vi.mock('../services/storage/repositories/account.local-storage.repository', () => ({
+vi.mock('../services/storage/repositories/accounts/account.local-storage.repository', () => ({
   LocalStorageAccountRepository: class {
     getAll = repositoryMocks.accountGetAll
     getById = repositoryMocks.accountGetById
@@ -28,14 +28,17 @@ vi.mock('../services/storage/repositories/account.local-storage.repository', () 
   },
 }))
 
-vi.mock('../services/storage/repositories/transaction.local-storage.repository', () => ({
-  LocalStorageTransactionRepository: class {
-    getAll = repositoryMocks.transactionGetAll
-    getById = repositoryMocks.transactionGetById
-    save = repositoryMocks.transactionSave
-    delete = repositoryMocks.transactionDelete
-  },
-}))
+vi.mock(
+  '../services/storage/repositories/transactions/transaction.local-storage.repository',
+  () => ({
+    LocalStorageTransactionRepository: class {
+      getAll = repositoryMocks.transactionGetAll
+      getById = repositoryMocks.transactionGetById
+      save = repositoryMocks.transactionSave
+      delete = repositoryMocks.transactionDelete
+    },
+  }),
+)
 
 const testAccount: Account = {
   id: 'account-1',

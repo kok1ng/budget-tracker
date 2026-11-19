@@ -1,4 +1,4 @@
-import type { Account } from '../../../domain/accounts/account.types'
+import type { Account } from '../../../../domain/accounts/account.types'
 
 export interface AccountRepository {
   getAll(): Promise<Account[]>

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readStorageCollection, writeStorageCollection } from '../storage-collection.utils'
+import { readStorageCollection, writeStorageCollection } from '../../storage-collection.utils'
 import { LocalStorageTransactionRepository } from './transaction.local-storage.repository'
-import type { Transaction } from '../../../domain/transactions/transaction.types'
+import type { Transaction } from '../../../../domain/transactions/transaction.types'
 
-vi.mock('../storage-collection.utils', () => ({
+vi.mock('../../storage-collection.utils', () => ({
   readStorageCollection: vi.fn(),
   writeStorageCollection: vi.fn(),
 }))

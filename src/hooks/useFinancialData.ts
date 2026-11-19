@@ -3,11 +3,14 @@ import { useEffect, useState } from 'react'
 import type { Account } from '../domain/accounts/account.types'
 import type { Transaction } from '../domain/transactions/transaction.types'
 
-import { LocalStorageAccountRepository } from '../services/storage/repositories/account.local-storage.repository'
-import type { AccountRepository } from '../services/storage/repositories/account.repository'
+import { LocalStorageAccountRepository } from '../services/storage/repositories/accounts/account.local-storage.repository'
+import type { AccountRepository } from '../services/storage/repositories/accounts/account.repository'
 
-import { LocalStorageTransactionRepository } from '../services/storage/repositories/transaction.local-storage.repository'
-import type { TransactionRepository } from '../services/storage/repositories/transaction.repository'
+import { LocalStorageTransactionRepository } from '../services/storage/repositories/transactions/transaction.local-storage.repository'
+import type { TransactionRepository } from '../services/storage/repositories/transactions/transaction.repository'
+
+import { LocalStorageCategoryRepository } from '../services/storage/repositories/categories/category.local-storage.repository'
+import type { CategoryRepository } from '../services/storage/repositories/categories/category.repository'
 
 import { StorageError } from '../services/storage/storage.types'
 
@@ -35,7 +38,13 @@ const accountRepository: AccountRepository = new LocalStorageAccountRepository()
 
 const transactionRepository: TransactionRepository = new LocalStorageTransactionRepository()
 
-const transactionService = new TransactionService(accountRepository, transactionRepository)
+const categoryRepository: CategoryRepository = new LocalStorageCategoryRepository()
+
+const transactionService = new TransactionService(
+  accountRepository,
+  transactionRepository,
+  categoryRepository,
+)
 
 const accountService = new AccountService(accountRepository, transactionRepository)
 

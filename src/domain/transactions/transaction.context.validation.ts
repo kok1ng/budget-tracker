@@ -1,10 +1,11 @@
 import type { Account } from '../accounts/account.types'
+import type { Category } from '../categories/category.types'
 import type { Transaction } from './transaction.types'
 
 export function isTransactionContextValid(
   transaction: Transaction,
   accounts: Account[],
-  categoryIds: string[],
+  categories: Category[],
 ): boolean {
   const sourceAccount = accounts.find((account) => account.id === transaction.accountId)
 
@@ -20,11 +21,23 @@ export function isTransactionContextValid(
     return false
   }
 
-  if (transaction.categoryId !== null && !categoryIds.includes(transaction.categoryId)) {
-    return false
+  if (transaction.categoryId !== null) {
+    const category = categories.find((item) => item.id === transaction.categoryId)
+
+    if (!category) {
+      return false
+    }
+
+    if (transaction.type !== category.type) {
+      return false
+    }
   }
 
   if (transaction.type === 'transfer') {
+    if (transaction.categoryId !== null) {
+      return false
+    }
+
     const destinationAccount = accounts.find(
       (account) => account.id === transaction.destinationAccountId,
     )

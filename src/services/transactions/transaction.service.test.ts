@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
-import type { AccountRepository } from '../storage/repositories/account.repository'
-import type { TransactionRepository } from '../storage/repositories/transaction.repository'
+import type { Category } from '../../domain/categories/category.types'
+import type { AccountRepository } from '../storage/repositories/accounts/account.repository'
+import type { TransactionRepository } from '../storage/repositories/transactions/transaction.repository'
+import type { CategoryRepository } from '../storage/repositories/categories/category.repository'
 import { TransactionService } from './transaction.service'
 
 const testAccount: Account = {
@@ -38,6 +40,22 @@ const thirdTestAccount: Account = {
   archivedAt: null,
 }
 
+const expenseCategory: Category = {
+  id: 'category-1',
+  name: 'Groceries',
+  type: 'expense',
+  createdAt: '2026-11-06T10:00:00.000Z',
+  updatedAt: '2026-11-06T10:00:00.000Z',
+}
+
+const incomeCategory: Category = {
+  id: 'category-2',
+  name: 'Salary',
+  type: 'income',
+  createdAt: '2026-11-06T10:00:00.000Z',
+  updatedAt: '2026-11-06T10:00:00.000Z',
+}
+
 const existingTransaction: Transaction = {
   id: 'transaction-existing',
   type: 'expense',
@@ -54,14 +72,17 @@ const existingTransaction: Transaction = {
 
 let accounts: Account[]
 let transactions: Transaction[]
+let categories: Category[]
 
 let accountRepository: AccountRepository
 let transactionRepository: TransactionRepository
+let categoryRepository: CategoryRepository
 let service: TransactionService
 
 beforeEach(() => {
   accounts = [{ ...testAccount }, { ...thirdTestAccount }]
   transactions = [{ ...existingTransaction }]
+  categories = [{ ...expenseCategory }, { ...incomeCategory }]
 
   accountRepository = {
     getAll: async () => accounts,
@@ -97,7 +118,24 @@ beforeEach(() => {
     },
   }
 
-  service = new TransactionService(accountRepository, transactionRepository, {
+  categoryRepository = {
+    getAll: async () => categories,
+    getById: async (id) => categories.find((category) => category.id === id) ?? null,
+    save: async (category) => {
+      const index = categories.findIndex((existing) => existing.id === category.id)
+
+      if (index === -1) {
+        categories.push(category)
+      } else {
+        categories[index] = category
+      }
+    },
+    delete: async (id) => {
+      categories = categories.filter((category) => category.id !== id)
+    },
+  }
+
+  service = new TransactionService(accountRepository, transactionRepository, categoryRepository, {
     generateId: () => 'transaction-new',
     getCurrentTimestamp: () => '2026-11-06T12:00:00.000Z',
   })
@@ -470,6 +508,42 @@ describe('createTransaction', () => {
     ).rejects.toMatchObject({
       name: 'TransactionOperationError',
       code: 'INSUFFICIENT_BALANCE',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
+
+  it('rejects creation when the category does not exist', async () => {
+    await expect(
+      service.createTransaction({
+        type: 'expense',
+        amountMinor: 10000,
+        description: 'Purchase',
+        categoryId: 'missing-category',
+        accountId: 'account-1',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'CATEGORY_NOT_FOUND',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
+
+  it('rejects creation when the category type does not match the transaction type', async () => {
+    await expect(
+      service.createTransaction({
+        type: 'expense',
+        amountMinor: 10000,
+        description: 'Purchase',
+        categoryId: 'category-2',
+        accountId: 'account-1',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'CATEGORY_TYPE_MISMATCH',
     })
 
     expect(transactions).toEqual([existingTransaction])
@@ -871,6 +945,42 @@ describe('updateTransaction', () => {
     ).rejects.toMatchObject({
       name: 'TransactionOperationError',
       code: 'INSUFFICIENT_BALANCE',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
+
+  it('rejects an update when the category does not exist', async () => {
+    await expect(
+      service.updateTransaction('transaction-existing', {
+        type: 'expense',
+        amountMinor: 30000,
+        description: 'Updated groceries',
+        categoryId: 'missing-category',
+        accountId: 'account-1',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'CATEGORY_NOT_FOUND',
+    })
+
+    expect(transactions).toEqual([existingTransaction])
+  })
+
+  it('rejects an update when the category type does not match the transaction type', async () => {
+    await expect(
+      service.updateTransaction('transaction-existing', {
+        type: 'expense',
+        amountMinor: 30000,
+        description: 'Updated groceries',
+        categoryId: 'category-2',
+        accountId: 'account-1',
+        date: '2026-11-06',
+      }),
+    ).rejects.toMatchObject({
+      name: 'TransactionOperationError',
+      code: 'CATEGORY_TYPE_MISMATCH',
     })
 
     expect(transactions).toEqual([existingTransaction])

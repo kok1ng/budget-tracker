@@ -3,17 +3,19 @@ import { isValidTransaction } from '../../domain/transactions/transaction.valida
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
 import { TransactionOperationError } from './transaction-operation.errors'
-import type { AccountRepository } from '../storage/repositories/account.repository'
-import type { TransactionRepository } from '../storage/repositories/transaction.repository'
+import type { AccountRepository } from '../storage/repositories/accounts/account.repository'
+import type { TransactionRepository } from '../storage/repositories/transactions/transaction.repository'
 import type {
   CreateTransactionInput,
   UpdateTransactionInput,
   TransactionServiceOptions,
 } from './transaction.service.types'
+import type { CategoryRepository } from '../storage/repositories/categories/category.repository'
 
 export class TransactionService {
   private readonly accountRepository: AccountRepository
   private readonly transactionRepository: TransactionRepository
+  private readonly categoryRepository: CategoryRepository
 
   private readonly generateId: () => string
   private readonly getCurrentTimestamp: () => string
@@ -21,10 +23,12 @@ export class TransactionService {
   constructor(
     accountRepository: AccountRepository,
     transactionRepository: TransactionRepository,
+    categoryRepository: CategoryRepository,
     options: Partial<TransactionServiceOptions> = {},
   ) {
     this.accountRepository = accountRepository
     this.transactionRepository = transactionRepository
+    this.categoryRepository = categoryRepository
 
     this.generateId = options.generateId ?? (() => crypto.randomUUID())
     this.getCurrentTimestamp = options.getCurrentTimestamp ?? (() => new Date().toISOString())
@@ -113,6 +117,10 @@ export class TransactionService {
           'Source and destination accounts must use the same currency.',
         )
       }
+    }
+
+    if (input.type !== 'transfer') {
+      await this.validateCategory(input.categoryId, input.type)
     }
 
     const transactions = await this.transactionRepository.getAll()
@@ -262,6 +270,10 @@ export class TransactionService {
       )
     }
 
+    if (input.type !== 'transfer') {
+      await this.validateCategory(input.categoryId, input.type)
+    }
+
     const transactions = await this.transactionRepository.getAll()
 
     const updatedTransactions = transactions.map((transaction) =>
@@ -308,5 +320,27 @@ export class TransactionService {
     await this.ensureNonNegativeBalances(affectedAccountIds, remainingTransactions)
 
     await this.transactionRepository.delete(id)
+  }
+
+  private async validateCategory(
+    categoryId: string | null | undefined,
+    transactionType: 'income' | 'expense',
+  ): Promise<void> {
+    if (categoryId === null || categoryId === undefined) {
+      return
+    }
+
+    const category = await this.categoryRepository.getById(categoryId)
+
+    if (category === null) {
+      throw new TransactionOperationError('CATEGORY_NOT_FOUND', 'Category not found.')
+    }
+
+    if (category.type !== transactionType) {
+      throw new TransactionOperationError(
+        'CATEGORY_TYPE_MISMATCH',
+        'Category type does not match transaction type.',
+      )
+    }
   }
 }

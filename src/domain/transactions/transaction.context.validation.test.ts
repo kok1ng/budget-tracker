@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Account } from '../accounts/account.types'
+import type { Category } from '../categories/category.types'
 import type { Transaction } from './transaction.types'
 import { isTransactionContextValid } from './transaction.context.validation'
 
@@ -26,6 +27,23 @@ const accounts: Account[] = [
   },
 ]
 
+const categories: Category[] = [
+  {
+    id: 'category-1',
+    name: 'Groceries',
+    type: 'expense',
+    createdAt: '2026-11-04T10:00:00.000Z',
+    updatedAt: '2026-11-04T10:00:00.000Z',
+  },
+  {
+    id: 'category-2',
+    name: 'Salary',
+    type: 'income',
+    createdAt: '2026-11-04T10:00:00.000Z',
+    updatedAt: '2026-11-04T10:00:00.000Z',
+  },
+]
+
 const validTransaction: Transaction = {
   id: 'transaction-1',
   type: 'expense',
@@ -40,16 +58,18 @@ const validTransaction: Transaction = {
   updatedAt: '2026-11-04T10:00:00.000Z',
 }
 
-const categoryIds = ['category-1', 'category-2']
-
 describe('isTransactionContextValid', () => {
   it('accepts a valid expense transaction', () => {
-    expect(isTransactionContextValid(validTransaction, accounts, categoryIds)).toBe(true)
+    expect(isTransactionContextValid(validTransaction, accounts, categories)).toBe(true)
   })
 
   it('accepts a valid income transaction', () => {
     expect(
-      isTransactionContextValid({ ...validTransaction, type: 'income' }, accounts, categoryIds),
+      isTransactionContextValid(
+        { ...validTransaction, type: 'income', categoryId: 'category-2' },
+        accounts,
+        categories,
+      ),
     ).toBe(true)
   })
 
@@ -59,10 +79,11 @@ describe('isTransactionContextValid', () => {
         {
           ...validTransaction,
           type: 'transfer',
+          categoryId: null,
           destinationAccountId: 'account-2',
         },
         accounts,
-        categoryIds,
+        categories,
       ),
     ).toBe(true)
   })
@@ -72,20 +93,20 @@ describe('isTransactionContextValid', () => {
       isTransactionContextValid(
         { ...validTransaction, accountId: 'account-999' },
         accounts,
-        categoryIds,
+        categories,
       ),
     ).toBe(false)
   })
 
   it('rejects a transaction with a currency different from its source account', () => {
     expect(
-      isTransactionContextValid({ ...validTransaction, currency: 'EUR' }, accounts, categoryIds),
+      isTransactionContextValid({ ...validTransaction, currency: 'EUR' }, accounts, categories),
     ).toBe(false)
   })
 
   it('accepts a transaction without a category', () => {
     expect(
-      isTransactionContextValid({ ...validTransaction, categoryId: null }, accounts, categoryIds),
+      isTransactionContextValid({ ...validTransaction, categoryId: null }, accounts, categories),
     ).toBe(true)
   })
 
@@ -94,7 +115,41 @@ describe('isTransactionContextValid', () => {
       isTransactionContextValid(
         { ...validTransaction, categoryId: 'category-999' },
         accounts,
-        categoryIds,
+        categories,
+      ),
+    ).toBe(false)
+  })
+
+  it('rejects an expense transaction with an income category', () => {
+    expect(
+      isTransactionContextValid(
+        { ...validTransaction, categoryId: 'category-2' },
+        accounts,
+        categories,
+      ),
+    ).toBe(false)
+  })
+
+  it('rejects an income transaction with an expense category', () => {
+    expect(
+      isTransactionContextValid(
+        { ...validTransaction, type: 'income', categoryId: 'category-1' },
+        accounts,
+        categories,
+      ),
+    ).toBe(false)
+  })
+
+  it('rejects a transfer with a category', () => {
+    expect(
+      isTransactionContextValid(
+        {
+          ...validTransaction,
+          type: 'transfer',
+          destinationAccountId: 'account-2',
+        },
+        accounts,
+        categories,
       ),
     ).toBe(false)
   })
@@ -105,10 +160,11 @@ describe('isTransactionContextValid', () => {
         {
           ...validTransaction,
           type: 'transfer',
+          categoryId: null,
           destinationAccountId: 'account-999',
         },
         accounts,
-        categoryIds,
+        categories,
       ),
     ).toBe(false)
   })
@@ -119,10 +175,11 @@ describe('isTransactionContextValid', () => {
         {
           ...validTransaction,
           type: 'transfer',
+          categoryId: null,
           destinationAccountId: 'account-1',
         },
         accounts,
-        categoryIds,
+        categories,
       ),
     ).toBe(false)
   })
@@ -141,10 +198,11 @@ describe('isTransactionContextValid', () => {
         {
           ...validTransaction,
           type: 'transfer',
+          categoryId: null,
           destinationAccountId: 'account-2',
         },
         euroAccounts,
-        categoryIds,
+        categories,
       ),
     ).toBe(false)
   })
@@ -158,7 +216,7 @@ describe('isTransactionContextValid', () => {
       accounts[1],
     ]
 
-    expect(isTransactionContextValid(validTransaction, archivedAccounts, categoryIds)).toBe(false)
+    expect(isTransactionContextValid(validTransaction, archivedAccounts, categories)).toBe(false)
   })
 
   it('rejects a transfer to an archived destination account', () => {
@@ -175,10 +233,11 @@ describe('isTransactionContextValid', () => {
         {
           ...validTransaction,
           type: 'transfer',
+          categoryId: null,
           destinationAccountId: 'account-2',
         },
         archivedAccounts,
-        categoryIds,
+        categories,
       ),
     ).toBe(false)
   })

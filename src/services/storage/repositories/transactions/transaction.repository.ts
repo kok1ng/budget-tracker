@@ -1,4 +1,4 @@
-import type { Transaction } from '../../../domain/transactions/transaction.types'
+import type { Transaction } from '../../../../domain/transactions/transaction.types'
 
 export interface TransactionRepository {
   getAll(): Promise<Transaction[]>

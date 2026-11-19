@@ -9,17 +9,20 @@ const repositoryMocks = vi.hoisted(() => ({
   getAllTransactions: vi.fn(),
 }))
 
-vi.mock('../services/storage/repositories/account.local-storage.repository', () => ({
+vi.mock('../services/storage/repositories/accounts/account.local-storage.repository', () => ({
   LocalStorageAccountRepository: class {
     getAll = repositoryMocks.getAllAccounts
   },
 }))
 
-vi.mock('../services/storage/repositories/transaction.local-storage.repository', () => ({
-  LocalStorageTransactionRepository: class {
-    getAll = repositoryMocks.getAllTransactions
-  },
-}))
+vi.mock(
+  '../services/storage/repositories/transactions/transaction.local-storage.repository',
+  () => ({
+    LocalStorageTransactionRepository: class {
+      getAll = repositoryMocks.getAllTransactions
+    },
+  }),
+)
 
 describe('App', () => {
   beforeEach(() => {
