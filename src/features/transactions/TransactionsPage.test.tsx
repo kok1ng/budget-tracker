@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Category } from '../../domain/categories/category.types'
 
 import TransactionsPage from './TransactionsPage'
 
@@ -25,6 +26,14 @@ const secondTestAccount: Account = {
   ...testAccount,
   id: 'account-2',
   name: 'Savings account',
+}
+
+const testCategory: Category = {
+  id: 'category-1',
+  name: 'Food & groceries',
+  type: 'expense',
+  createdAt: '2026-11-09T10:00:00.000Z',
+  updatedAt: '2026-11-09T10:00:00.000Z',
 }
 
 const archivedAccount: Account = {
@@ -68,6 +77,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -77,6 +87,26 @@ describe('TransactionsPage', () => {
     expect(screen.getByText('Groceries')).toBeInTheDocument()
     expect(screen.getByRole('listitem')).toHaveTextContent('Visa card')
     expect(screen.getByText('−$100.00')).toBeInTheDocument()
+  })
+
+  it('displays the category name for a categorized transaction', () => {
+    const categorizedExpense: Transaction = {
+      ...testExpense,
+      categoryId: testCategory.id,
+    }
+
+    render(
+      <TransactionsPage
+        transactions={[categorizedExpense]}
+        accounts={[testAccount]}
+        categories={[testCategory]}
+        onCreateTransaction={vi.fn()}
+        onUpdateTransaction={vi.fn()}
+        onDeleteTransaction={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Food & groceries')).toBeInTheDocument()
   })
 
   it('displays an income with the correct formatted amount and plus sign', () => {
@@ -92,6 +122,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testIncome]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -107,6 +138,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -122,6 +154,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn().mockResolvedValue(testExpense)}
         onDeleteTransaction={vi.fn()}
@@ -178,6 +211,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={onUpdateTransaction}
         onDeleteTransaction={vi.fn()}
@@ -230,6 +264,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={onUpdateTransaction}
         onDeleteTransaction={vi.fn()}
@@ -278,6 +313,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={onUpdateTransaction}
         onDeleteTransaction={vi.fn()}
@@ -305,6 +341,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[archivedExpense]}
         accounts={[archivedAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -322,6 +359,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={onDeleteTransaction}
@@ -348,6 +386,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={onDeleteTransaction}
@@ -370,6 +409,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={onDeleteTransaction}
@@ -397,6 +437,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[archivedExpense]}
         accounts={[archivedAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={onDeleteTransaction}
@@ -425,6 +466,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[olderExpense, testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -450,6 +492,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, incomeTransaction]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -482,6 +525,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, incomeTransaction]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -520,6 +564,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, secondAccountTransaction]}
         accounts={[testAccount, secondAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -552,6 +597,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, archivedTransaction]}
         accounts={[testAccount, archivedAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -584,6 +630,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, olderExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -626,6 +673,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, incomeTransaction, secondAccountIncome]}
         accounts={[testAccount, secondAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -657,6 +705,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense]}
         accounts={[testAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -680,6 +729,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, testTransfer]}
         accounts={[testAccount, secondTestAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -703,6 +753,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testExpense, testTransfer]}
         accounts={[testAccount, secondTestAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -726,6 +777,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testTransfer]}
         accounts={[testAccount, secondTestAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -740,6 +792,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testTransfer]}
         accounts={[testAccount, secondTestAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -763,6 +816,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[transferToArchivedAccount]}
         accounts={[testAccount, archivedAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn()}
         onDeleteTransaction={vi.fn()}
@@ -777,6 +831,7 @@ describe('TransactionsPage', () => {
       <TransactionsPage
         transactions={[testTransfer]}
         accounts={[testAccount, secondTestAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
         onUpdateTransaction={vi.fn().mockResolvedValue(testTransfer)}
         onDeleteTransaction={vi.fn()}

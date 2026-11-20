@@ -7,6 +7,7 @@ import { StorageError } from '../services/storage/storage.types'
 const repositoryMocks = vi.hoisted(() => ({
   getAllAccounts: vi.fn(),
   getAllTransactions: vi.fn(),
+  getAllCategories: vi.fn(),
 }))
 
 vi.mock('../services/storage/repositories/accounts/account.local-storage.repository', () => ({
@@ -24,12 +25,19 @@ vi.mock(
   }),
 )
 
+vi.mock('../services/storage/repositories/categories/category.local-storage.repository', () => ({
+  LocalStorageCategoryRepository: class {
+    getAll = repositoryMocks.getAllCategories
+  },
+}))
+
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
     repositoryMocks.getAllAccounts.mockResolvedValue([])
     repositoryMocks.getAllTransactions.mockResolvedValue([])
+    repositoryMocks.getAllCategories.mockResolvedValue([])
   })
 
   it('renders the Dashboard page by default', async () => {

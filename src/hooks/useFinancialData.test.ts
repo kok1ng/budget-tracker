@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '../domain/accounts/account.types'
 import type { Transaction } from '../domain/transactions/transaction.types'
+import type { Category } from '../domain/categories/category.types'
 
 import type { UpdateAccountInput } from '../services/accounts/account.service.types'
 
@@ -17,6 +18,10 @@ const repositoryMocks = vi.hoisted(() => ({
   transactionGetById: vi.fn(),
   transactionSave: vi.fn(),
   transactionDelete: vi.fn(),
+  categoryGetAll: vi.fn(),
+  categoryGetById: vi.fn(),
+  categorySave: vi.fn(),
+  categoryDelete: vi.fn(),
 }))
 
 vi.mock('../services/storage/repositories/accounts/account.local-storage.repository', () => ({
@@ -39,6 +44,15 @@ vi.mock(
     },
   }),
 )
+
+vi.mock('../services/storage/repositories/categories/category.local-storage.repository', () => ({
+  LocalStorageCategoryRepository: class {
+    getAll = repositoryMocks.categoryGetAll
+    getById = repositoryMocks.categoryGetById
+    save = repositoryMocks.categorySave
+    delete = repositoryMocks.categoryDelete
+  },
+}))
 
 const testAccount: Account = {
   id: 'account-1',
@@ -65,8 +79,17 @@ const existingTransaction: Transaction = {
   updatedAt: '2026-11-06T10:00:00.000Z',
 }
 
+const testCategory: Category = {
+  id: 'category-1',
+  name: 'Groceries',
+  type: 'expense',
+  createdAt: '2026-11-06T10:00:00.000Z',
+  updatedAt: '2026-11-06T10:00:00.000Z',
+}
+
 let accounts: Account[]
 let transactions: Transaction[]
+let categories: Category[]
 
 describe('useFinancialData', () => {
   beforeEach(() => {
@@ -74,6 +97,7 @@ describe('useFinancialData', () => {
 
     accounts = [{ ...testAccount }]
     transactions = [{ ...existingTransaction }]
+    categories = [{ ...testCategory }]
 
     repositoryMocks.accountGetAll.mockImplementation(async () =>
       accounts.map((account) => ({ ...account })),
@@ -112,9 +136,30 @@ describe('useFinancialData', () => {
     repositoryMocks.transactionDelete.mockImplementation(async (id: string) => {
       transactions = transactions.filter((transaction) => transaction.id !== id)
     })
+    repositoryMocks.categoryGetAll.mockImplementation(async () =>
+      categories.map((category) => ({ ...category })),
+    )
+
+    repositoryMocks.categoryGetById.mockImplementation(
+      async (id: string) => categories.find((category) => category.id === id) ?? null,
+    )
+
+    repositoryMocks.categorySave.mockImplementation(async (category: Category) => {
+      const index = categories.findIndex((item) => item.id === category.id)
+
+      if (index === -1) {
+        categories.push(category)
+      } else {
+        categories[index] = category
+      }
+    })
+
+    repositoryMocks.categoryDelete.mockImplementation(async (id: string) => {
+      categories = categories.filter((category) => category.id !== id)
+    })
   })
 
-  it('loads accounts and transactions', async () => {
+  it('loads accounts, transactions, and categories', async () => {
     const { result } = renderHook(() => useFinancialData())
 
     await waitFor(() => {
@@ -123,6 +168,7 @@ describe('useFinancialData', () => {
 
     expect(result.current.accounts).toEqual([testAccount])
     expect(result.current.transactions).toEqual([existingTransaction])
+    expect(result.current.categories).toEqual([testCategory])
     expect(result.current.loadError).toBeNull()
   })
 
@@ -649,5 +695,169 @@ describe('useFinancialData', () => {
 
     expect(result.current.accounts).toEqual(initialAccounts)
     expect(repositoryMocks.accountSave).not.toHaveBeenCalled()
+  })
+
+  it('adds a category to state after successful creation', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    let createdCategory: Category | undefined
+
+    await act(async () => {
+      createdCategory = await result.current.createCategory({
+        name: '  Utilities  ',
+        type: 'expense',
+      })
+    })
+
+    expect(createdCategory).toBeDefined()
+    expect(createdCategory).toMatchObject({
+      name: 'Utilities',
+      type: 'expense',
+    })
+
+    expect(createdCategory?.id).toBeTruthy()
+    expect(createdCategory?.createdAt).toBe(createdCategory?.updatedAt)
+
+    expect(result.current.categories).toHaveLength(2)
+    expect(result.current.categories[1]).toEqual(createdCategory)
+
+    expect(repositoryMocks.categorySave).toHaveBeenCalledOnce()
+    expect(repositoryMocks.categorySave).toHaveBeenCalledWith(createdCategory)
+  })
+
+  it('updates a category in state after successful update', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    let updatedCategory: Category | undefined
+
+    await act(async () => {
+      updatedCategory = await result.current.updateCategory('category-1', {
+        name: 'Food and groceries',
+        type: 'expense',
+      })
+    })
+
+    expect(updatedCategory).toMatchObject({
+      id: 'category-1',
+      name: 'Food and groceries',
+      type: 'expense',
+    })
+
+    expect(result.current.categories).toHaveLength(1)
+    expect(result.current.categories[0]).toEqual(updatedCategory)
+
+    expect(repositoryMocks.categorySave).toHaveBeenCalledOnce()
+    expect(repositoryMocks.categorySave).toHaveBeenCalledWith(updatedCategory)
+  })
+
+  it('removes a category from state after successful deletion', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await act(async () => {
+      await result.current.deleteCategory('category-1')
+    })
+
+    expect(result.current.categories).toEqual([])
+    expect(repositoryMocks.categoryDelete).toHaveBeenCalledWith('category-1')
+  })
+
+  it('does not save a category when category creation validation fails', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    const initialCategories = result.current.categories
+
+    await expect(
+      result.current.createCategory({
+        name: '   ',
+        type: 'expense',
+      }),
+    ).rejects.toMatchObject({
+      name: 'CategoryOperationError',
+      code: 'INVALID_CATEGORY',
+    })
+
+    expect(result.current.categories).toEqual(initialCategories)
+    expect(repositoryMocks.categorySave).not.toHaveBeenCalled()
+  })
+
+  it('does not save a category when its name already exists', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await expect(
+      result.current.createCategory({
+        name: 'groceries',
+        type: 'income',
+      }),
+    ).rejects.toMatchObject({
+      name: 'CategoryOperationError',
+      code: 'CATEGORY_NAME_ALREADY_EXISTS',
+    })
+
+    expect(result.current.categories).toEqual([testCategory])
+    expect(repositoryMocks.categorySave).not.toHaveBeenCalled()
+  })
+
+  it('does not delete a category that is referenced by a transaction', async () => {
+    transactions = [
+      {
+        ...existingTransaction,
+        categoryId: 'category-1',
+      },
+    ]
+
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await expect(result.current.deleteCategory('category-1')).rejects.toMatchObject({
+      name: 'CategoryOperationError',
+      code: 'CATEGORY_HAS_TRANSACTIONS',
+    })
+
+    expect(result.current.categories).toEqual([testCategory])
+    expect(repositoryMocks.categoryDelete).not.toHaveBeenCalled()
+  })
+
+  it('keeps category state unchanged when category persistence fails', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    const initialCategories = result.current.categories
+
+    repositoryMocks.categorySave.mockRejectedValueOnce(new Error('Storage write failed'))
+
+    await expect(
+      result.current.createCategory({
+        name: 'Utilities',
+        type: 'expense',
+      }),
+    ).rejects.toThrow('Storage write failed')
+
+    expect(result.current.categories).toEqual(initialCategories)
   })
 })

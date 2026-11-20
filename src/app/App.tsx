@@ -18,6 +18,7 @@ function App() {
   const {
     accounts,
     transactions,
+    categories,
     isLoading,
     loadError,
     createAccount,
@@ -28,6 +29,9 @@ function App() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
+    createCategory,
+    updateCategory,
+    deleteCategory,
   } = useFinancialData()
 
   function renderPage() {
@@ -37,6 +41,7 @@ function App() {
           <DashboardPage
             accounts={accounts}
             transactions={transactions}
+            categories={categories}
             onPageChange={setActivePage}
           />
         )
@@ -45,6 +50,7 @@ function App() {
           <TransactionsPage
             transactions={transactions}
             accounts={accounts}
+            categories={categories}
             onCreateTransaction={createTransaction}
             onUpdateTransaction={updateTransaction}
             onDeleteTransaction={deleteTransaction}
@@ -63,7 +69,14 @@ function App() {
           />
         )
       case 'categories':
-        return <CategoriesPage />
+        return (
+          <CategoriesPage
+            categories={categories}
+            onCreateCategory={createCategory}
+            onUpdateCategory={updateCategory}
+            onDeleteCategory={deleteCategory}
+          />
+        )
       case 'budgets':
         return <BudgetsPage />
       case 'settings':

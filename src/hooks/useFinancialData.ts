@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import type { Account } from '../domain/accounts/account.types'
 import type { Transaction } from '../domain/transactions/transaction.types'
+import type { Category } from '../domain/categories/category.types'
 
 import { LocalStorageAccountRepository } from '../services/storage/repositories/accounts/account.local-storage.repository'
 import type { AccountRepository } from '../services/storage/repositories/accounts/account.repository'
@@ -20,13 +21,19 @@ import type {
   UpdateTransactionInput,
 } from '../services/transactions/transaction.service.types'
 import { AccountService } from '../services/accounts/account.service'
-import type { UpdateAccountInput } from '../services/accounts/account.service.types'
+import { CategoryService } from '../services/categories/category.service'
 
+import type { UpdateAccountInput } from '../services/accounts/account.service.types'
 import type { CreateAccountInput } from '../domain/accounts/account.types'
+import type {
+  CreateCategoryInput,
+  UpdateCategoryInput,
+} from '../services/categories/category.service.types'
 
 interface AppData {
   accounts: Account[]
   transactions: Transaction[]
+  categories: Category[]
 }
 
 interface AppLoadError {
@@ -35,9 +42,7 @@ interface AppLoadError {
 }
 
 const accountRepository: AccountRepository = new LocalStorageAccountRepository()
-
 const transactionRepository: TransactionRepository = new LocalStorageTransactionRepository()
-
 const categoryRepository: CategoryRepository = new LocalStorageCategoryRepository()
 
 const transactionService = new TransactionService(
@@ -45,13 +50,14 @@ const transactionService = new TransactionService(
   transactionRepository,
   categoryRepository,
 )
-
 const accountService = new AccountService(accountRepository, transactionRepository)
+const categoryService = new CategoryService(categoryRepository, transactionRepository)
 
 export function useFinancialData() {
   const [appData, setAppData] = useState<AppData>({
     accounts: [],
     transactions: [],
+    categories: [],
   })
 
   const [isLoading, setIsLoading] = useState(true)
@@ -62,13 +68,14 @@ export function useFinancialData() {
 
     async function loadFinancialData() {
       try {
-        const [accounts, transactions] = await Promise.all([
+        const [accounts, transactions, categories] = await Promise.all([
           accountRepository.getAll(),
           transactionRepository.getAll(),
+          categoryService.getAllCategories(),
         ])
 
         if (isCurrent) {
-          setAppData({ accounts, transactions })
+          setAppData({ accounts, transactions, categories })
         }
       } catch (error) {
         if (isCurrent) {
@@ -156,6 +163,39 @@ export function useFinancialData() {
     return restoredAccount
   }
 
+  async function createCategory(input: CreateCategoryInput): Promise<Category> {
+    const category = await categoryService.createCategory(input)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      categories: [...currentData.categories, category],
+    }))
+
+    return category
+  }
+
+  async function updateCategory(id: string, input: UpdateCategoryInput): Promise<Category> {
+    const updatedCategory = await categoryService.updateCategory(id, input)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      categories: currentData.categories.map((category) =>
+        category.id === id ? updatedCategory : category,
+      ),
+    }))
+
+    return updatedCategory
+  }
+
+  async function deleteCategory(id: string): Promise<void> {
+    await categoryService.deleteCategory(id)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      categories: currentData.categories.filter((category) => category.id !== id),
+    }))
+  }
+
   async function createTransaction(input: CreateTransactionInput) {
     const transaction = await transactionService.createTransaction(input)
 
@@ -190,6 +230,7 @@ export function useFinancialData() {
   return {
     accounts: appData.accounts,
     transactions: appData.transactions,
+    categories: appData.categories,
     isLoading,
     loadError,
     createAccount,
@@ -200,5 +241,8 @@ export function useFinancialData() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
+    createCategory,
+    updateCategory,
+    deleteCategory,
   }
 }

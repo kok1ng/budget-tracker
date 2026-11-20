@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Category } from '../../domain/categories/category.types'
 
 import TransactionForm from './TransactionForm'
 
@@ -30,6 +31,24 @@ const archivedAccount: Account = {
   name: 'Archived account',
   archivedAt: '2026-11-08T10:00:00.000Z',
 }
+
+const incomeCategory: Category = {
+  id: 'category-1',
+  name: 'Salary',
+  type: 'income',
+  createdAt: '2026-11-09T10:00:00.000Z',
+  updatedAt: '2026-11-09T10:00:00.000Z',
+}
+
+const expenseCategory: Category = {
+  id: 'category-2',
+  name: 'Groceries',
+  type: 'expense',
+  createdAt: '2026-11-09T10:00:00.000Z',
+  updatedAt: '2026-11-09T10:00:00.000Z',
+}
+
+const testCategories = [incomeCategory, expenseCategory]
 
 const testTransaction: Transaction = {
   id: 'transaction-1',
@@ -120,7 +139,12 @@ function submitForm(buttonName = 'Add transaction') {
 describe('TransactionForm', () => {
   it('renders the transaction form with default values', () => {
     render(
-      <TransactionForm mode="create" accounts={[activeAccount]} onCreateTransaction={vi.fn()} />,
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount]}
+        categories={[]}
+        onCreateTransaction={vi.fn()}
+      />,
     )
 
     expect(screen.getByRole('heading', { name: 'Add transaction' })).toBeInTheDocument()
@@ -138,6 +162,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount, secondActiveAccount, archivedAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
       />,
     )
@@ -152,7 +177,12 @@ describe('TransactionForm', () => {
 
   it('disables the transfer option when there is only one active account', () => {
     render(
-      <TransactionForm mode="create" accounts={[activeAccount]} onCreateTransaction={vi.fn()} />,
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount]}
+        categories={[]}
+        onCreateTransaction={vi.fn()}
+      />,
     )
 
     expect(screen.getByRole('option', { name: 'Transfer' })).toBeDisabled()
@@ -163,6 +193,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
       />,
     )
@@ -175,6 +206,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount, archivedAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
       />,
     )
@@ -184,7 +216,12 @@ describe('TransactionForm', () => {
 
   it('shows an explanatory message when there are no active accounts', () => {
     render(
-      <TransactionForm mode="create" accounts={[archivedAccount]} onCreateTransaction={vi.fn()} />,
+      <TransactionForm
+        mode="create"
+        accounts={[archivedAccount]}
+        categories={[]}
+        onCreateTransaction={vi.fn()}
+      />,
     )
 
     expect(screen.getByRole('heading', { name: 'No active accounts' })).toBeInTheDocument()
@@ -199,6 +236,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -230,6 +268,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -258,6 +297,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -281,6 +321,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -304,6 +345,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -328,6 +370,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -357,6 +400,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -378,6 +422,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="edit"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         transaction={testTransaction}
         onUpdateTransaction={vi.fn().mockResolvedValue(testTransaction)}
         onCancelEdit={vi.fn()}
@@ -401,6 +446,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="edit"
         accounts={[activeAccount, secondActiveAccount, archivedAccount]}
+        categories={[]}
         transaction={testTransaction}
         onUpdateTransaction={vi.fn().mockResolvedValue(testTransaction)}
         onCancelEdit={vi.fn()}
@@ -423,6 +469,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="edit"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         transaction={testTransaction}
         onUpdateTransaction={onUpdateTransaction}
         onCancelEdit={vi.fn()}
@@ -462,6 +509,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="edit"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         transaction={testTransaction}
         onUpdateTransaction={onUpdateTransaction}
         onCancelEdit={vi.fn()}
@@ -492,6 +540,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="edit"
         accounts={[activeAccount]}
+        categories={[]}
         transaction={testTransaction}
         onUpdateTransaction={vi.fn().mockResolvedValue(testTransaction)}
         onCancelEdit={onCancelEdit}
@@ -508,6 +557,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
       />,
     )
@@ -526,6 +576,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount, secondActiveAccount, archivedAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
       />,
     )
@@ -555,6 +606,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         onCreateTransaction={vi.fn()}
       />,
     )
@@ -579,6 +631,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="create"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         onCreateTransaction={onCreateTransaction}
       />,
     )
@@ -605,6 +658,7 @@ describe('TransactionForm', () => {
       <TransactionForm
         mode="edit"
         accounts={[activeAccount, secondActiveAccount]}
+        categories={[]}
         transaction={testTransfer}
         onUpdateTransaction={vi.fn().mockResolvedValue(testTransfer)}
         onCancelEdit={vi.fn()}
@@ -617,5 +671,135 @@ describe('TransactionForm', () => {
     expect(screen.getByLabelText('From account')).toHaveValue('account-1')
     expect(screen.getByLabelText('To account')).toHaveValue('account-2')
     expect(screen.getByLabelText('Date')).toHaveValue('2026-11-09')
+  })
+
+  it('shows only expense categories by default', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount]}
+        categories={testCategories}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    const categorySelect = screen.getByLabelText('Category (optional)')
+
+    expect(within(categorySelect).getByRole('option', { name: 'Groceries' })).toBeInTheDocument()
+    expect(within(categorySelect).queryByRole('option', { name: 'Salary' })).not.toBeInTheDocument()
+  })
+
+  it('shows only income categories when income is selected', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount]}
+        categories={testCategories}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Transaction type'), {
+      target: { value: 'income' },
+    })
+
+    const categorySelect = screen.getByLabelText('Category (optional)')
+
+    expect(within(categorySelect).getByRole('option', { name: 'Salary' })).toBeInTheDocument()
+    expect(
+      within(categorySelect).queryByRole('option', { name: 'Groceries' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('creates a transaction with the selected category', async () => {
+    const onCreateTransaction = vi.fn().mockResolvedValue(testTransaction)
+
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount]}
+        categories={testCategories}
+        onCreateTransaction={onCreateTransaction}
+      />,
+    )
+
+    fillValidForm()
+
+    fireEvent.change(screen.getByLabelText('Category (optional)'), {
+      target: { value: 'category-2' },
+    })
+
+    submitForm()
+
+    await waitFor(() => {
+      expect(onCreateTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'expense',
+          categoryId: 'category-2',
+        }),
+      )
+    })
+  })
+
+  it('hides the category selector when transfer is selected', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount, secondActiveAccount]}
+        categories={testCategories}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Transaction type'), {
+      target: { value: 'transfer' },
+    })
+
+    expect(screen.queryByLabelText('Category (optional)')).not.toBeInTheDocument()
+  })
+
+  it('clears the selected category when transaction type changes', () => {
+    render(
+      <TransactionForm
+        mode="create"
+        accounts={[activeAccount]}
+        categories={testCategories}
+        onCreateTransaction={vi.fn()}
+      />,
+    )
+
+    const categorySelect = screen.getByLabelText('Category (optional)')
+
+    fireEvent.change(categorySelect, {
+      target: { value: 'category-2' },
+    })
+
+    expect(categorySelect).toHaveValue('category-2')
+
+    fireEvent.change(screen.getByLabelText('Transaction type'), {
+      target: { value: 'income' },
+    })
+
+    expect(screen.getByLabelText('Category (optional)')).toHaveValue('')
+  })
+
+  it('preserves the selected category when editing a transaction', () => {
+    const categorizedTransaction: Transaction = {
+      ...testTransaction,
+      categoryId: 'category-2',
+    }
+
+    render(
+      <TransactionForm
+        mode="edit"
+        accounts={[activeAccount]}
+        categories={testCategories}
+        transaction={categorizedTransaction}
+        onUpdateTransaction={vi.fn().mockResolvedValue(categorizedTransaction)}
+        onCancelEdit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByLabelText('Category (optional)')).toHaveValue('category-2')
   })
 })

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Category } from '../../domain/categories/category.types'
 
 import DashboardPage from './DashboardPage'
 
@@ -29,6 +30,14 @@ const archivedAccount: Account = {
   id: 'account-3',
   name: 'Archived card',
   archivedAt: '2026-11-10T10:00:00.000Z',
+}
+
+const testCategory: Category = {
+  id: 'category-1',
+  name: 'Food & groceries',
+  type: 'expense',
+  createdAt: '2026-11-01T10:00:00.000Z',
+  updatedAt: '2026-11-01T10:00:00.000Z',
 }
 
 function createTransaction(
@@ -77,7 +86,12 @@ describe('DashboardPage', () => {
     ]
 
     render(
-      <DashboardPage accounts={[mainAccount]} transactions={transactions} onPageChange={vi.fn()} />,
+      <DashboardPage
+        accounts={[mainAccount]}
+        transactions={transactions}
+        categories={[]}
+        onPageChange={vi.fn()}
+      />,
     )
 
     expect(screen.getByText('Total balance')).toBeInTheDocument()
@@ -88,7 +102,7 @@ describe('DashboardPage', () => {
   })
 
   it('displays zero amounts without a currency when no accounts exist', () => {
-    render(<DashboardPage accounts={[]} transactions={[]} onPageChange={vi.fn()} />)
+    render(<DashboardPage accounts={[]} transactions={[]} categories={[]} onPageChange={vi.fn()} />)
 
     expect(screen.getByText('No accounts yet')).toBeInTheDocument()
     expect(screen.getAllByText('0.00')).toHaveLength(4)
@@ -96,14 +110,28 @@ describe('DashboardPage', () => {
   })
 
   it('displays opening balances when accounts exist but there are no transactions', () => {
-    render(<DashboardPage accounts={[mainAccount]} transactions={[]} onPageChange={vi.fn()} />)
+    render(
+      <DashboardPage
+        accounts={[mainAccount]}
+        transactions={[]}
+        categories={[]}
+        onPageChange={vi.fn()}
+      />,
+    )
 
     expect(screen.getAllByText('$1,000.00')).toHaveLength(2)
     expect(screen.getByText('No transactions yet.')).toBeInTheDocument()
   })
 
   it('excludes archived accounts from the account overview and total balance', () => {
-    render(<DashboardPage accounts={[archivedAccount]} transactions={[]} onPageChange={vi.fn()} />)
+    render(
+      <DashboardPage
+        accounts={[archivedAccount]}
+        transactions={[]}
+        categories={[]}
+        onPageChange={vi.fn()}
+      />,
+    )
 
     expect(screen.getByText('No active accounts.')).toBeInTheDocument()
     expect(screen.queryByText('Archived card')).not.toBeInTheDocument()
@@ -125,6 +153,7 @@ describe('DashboardPage', () => {
       <DashboardPage
         accounts={[mainAccount, savingsAccount]}
         transactions={[transfer]}
+        categories={[]}
         onPageChange={vi.fn()}
       />,
     )
@@ -143,7 +172,14 @@ describe('DashboardPage', () => {
   it('navigates to the transactions page when View all is clicked', () => {
     const onPageChange = vi.fn()
 
-    render(<DashboardPage accounts={[mainAccount]} transactions={[]} onPageChange={onPageChange} />)
+    render(
+      <DashboardPage
+        accounts={[mainAccount]}
+        transactions={[]}
+        categories={[]}
+        onPageChange={onPageChange}
+      />,
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'View all' }))
 
@@ -153,10 +189,35 @@ describe('DashboardPage', () => {
   it('navigates to account management when Manage accounts is clicked', () => {
     const onPageChange = vi.fn()
 
-    render(<DashboardPage accounts={[]} transactions={[]} onPageChange={onPageChange} />)
+    render(
+      <DashboardPage accounts={[]} transactions={[]} categories={[]} onPageChange={onPageChange} />,
+    )
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage accounts' })[0])
 
     expect(onPageChange).toHaveBeenCalledWith('accounts')
+  })
+
+  it('displays the category name for a categorized recent transaction', () => {
+    const categorizedExpense = createTransaction({
+      id: 'expense-1',
+      type: 'expense',
+      description: 'Groceries',
+      categoryId: testCategory.id,
+      date: '2026-11-08',
+    })
+
+    render(
+      <DashboardPage
+        accounts={[mainAccount]}
+        transactions={[categorizedExpense]}
+        categories={[testCategory]}
+        onPageChange={vi.fn()}
+      />,
+    )
+
+    const transactionRow = screen.getByText('Groceries').closest('li')
+
+    expect(transactionRow).toHaveTextContent('Food & groceries')
   })
 })

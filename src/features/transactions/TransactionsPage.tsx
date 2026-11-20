@@ -6,6 +6,7 @@ import type {
   CreateTransactionInput,
   UpdateTransactionInput,
 } from '../../services/transactions/transaction.service.types'
+import type { Category } from '../../domain/categories/category.types'
 
 import PageHeader from '../../components/ui/PageHeader'
 import TransactionForm from './TransactionForm'
@@ -18,6 +19,7 @@ type TransactionSortOrder = 'newest' | 'oldest'
 interface TransactionsPageProps {
   transactions: Transaction[]
   accounts: Account[]
+  categories: Category[]
   onCreateTransaction: (input: CreateTransactionInput) => Promise<Transaction>
   onUpdateTransaction: (id: string, input: UpdateTransactionInput) => Promise<Transaction>
   onDeleteTransaction: (id: string) => Promise<void>
@@ -26,6 +28,7 @@ interface TransactionsPageProps {
 function TransactionsPage({
   transactions,
   accounts,
+  categories,
   onCreateTransaction,
   onUpdateTransaction,
   onDeleteTransaction,
@@ -100,6 +103,7 @@ function TransactionsPage({
       <TransactionForm
         mode="create"
         accounts={accounts}
+        categories={categories}
         onCreateTransaction={onCreateTransaction}
       />
 
@@ -108,6 +112,7 @@ function TransactionsPage({
           key={editingTransaction.id}
           transaction={editingTransaction}
           accounts={accounts}
+          categories={categories}
           onUpdateTransaction={handleUpdateTransaction}
           onClose={() => setEditingTransaction(null)}
         />
@@ -204,6 +209,11 @@ function TransactionsPage({
                 transaction.type === 'transfer' &&
                 (destinationAccount === undefined || destinationAccount.archivedAt !== null)
 
+              const category =
+                transaction.categoryId === null
+                  ? undefined
+                  : categories.find((item) => item.id === transaction.categoryId)
+
               return (
                 <li key={transaction.id} className="flex items-center justify-between gap-4">
                   <div>
@@ -215,7 +225,9 @@ function TransactionsPage({
                           {destinationAccount?.name ?? 'Unknown account'}
                         </>
                       ) : (
-                        (account?.name ?? 'Unknown account')
+                        <>
+                          {account?.name ?? 'Unknown account'} · {category?.name ?? 'No category'}
+                        </>
                       )}{' '}
                       · {transaction.date}
                     </p>

@@ -1,5 +1,6 @@
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Category } from '../../domain/categories/category.types'
 import type { Page } from '../../app/types'
 import { calculateDashboardData } from './dashboard.calculations'
 import { getLocalDateString } from '../shared/date.utils'
@@ -11,6 +12,7 @@ import StatCard from '../../components/ui/StatCard'
 interface DashboardPageProps {
   accounts: Account[]
   transactions: Transaction[]
+  categories: Category[]
   onPageChange: (page: Page) => void
 }
 
@@ -34,7 +36,7 @@ function formatDashboardPeriod(today: string): string {
   return `${monthName} 1–${day}, ${year}`
 }
 
-function DashboardPage({ accounts, transactions, onPageChange }: DashboardPageProps) {
+function DashboardPage({ accounts, transactions, categories, onPageChange }: DashboardPageProps) {
   const today = getLocalDateString()
   const dashboardData = calculateDashboardData(accounts, transactions, today)
   const currency = dashboardData.currency
@@ -122,6 +124,11 @@ function DashboardPage({ accounts, transactions, onPageChange }: DashboardPagePr
                     ? accounts.find((item) => item.id === transaction.destinationAccountId)
                     : undefined
 
+                const category =
+                  transaction.categoryId === null
+                    ? undefined
+                    : categories.find((item) => item.id === transaction.categoryId)
+
                 const amountPrefix =
                   transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '−' : ''
 
@@ -149,7 +156,9 @@ function DashboardPage({ accounts, transactions, onPageChange }: DashboardPagePr
                             {destinationAccount?.name ?? 'Unknown account'}
                           </>
                         ) : (
-                          (account?.name ?? 'Unknown account')
+                          <>
+                            {account?.name ?? 'Unknown account'} · {category?.name ?? 'No category'}
+                          </>
                         )}
                         {' · '}
                         {formatTransactionDate(transaction.date)}

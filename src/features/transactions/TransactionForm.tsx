@@ -1,16 +1,18 @@
 import { useState, type FormEvent } from 'react'
 
 import type { Account } from '../../domain/accounts/account.types'
+import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Category } from '../../domain/categories/category.types'
 import { parseAmountToMinorUnits } from '../shared/money-input.utils'
 import { getLocalDateString } from '../shared/date.utils'
 import type {
   CreateTransactionInput,
   UpdateTransactionInput,
 } from '../../services/transactions/transaction.service.types'
-import type { Transaction } from '../../domain/transactions/transaction.types'
 
 interface TransactionFormCommonProps {
   accounts: Account[]
+  categories: Category[]
 }
 
 type TransactionFormProps = TransactionFormCommonProps &
@@ -37,7 +39,7 @@ function formatMinorUnitsForInput(amountMinor: number): string {
 }
 
 function TransactionForm(props: TransactionFormProps) {
-  const { accounts } = props
+  const { accounts, categories } = props
   const activeAccounts = accounts.filter((account) => account.archivedAt === null)
 
   const [type, setType] = useState<FormTransactionType>(
@@ -54,6 +56,10 @@ function TransactionForm(props: TransactionFormProps) {
 
   const [accountId, setAccountId] = useState(
     props.mode === 'edit' ? props.transaction.accountId : (activeAccounts[0]?.id ?? ''),
+  )
+
+  const [categoryId, setCategoryId] = useState(
+    props.mode === 'edit' ? (props.transaction.categoryId ?? '') : '',
   )
 
   const [destinationAccountId, setDestinationAccountId] = useState(() => {
@@ -73,6 +79,7 @@ function TransactionForm(props: TransactionFormProps) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const destinationAccounts = activeAccounts.filter((account) => account.id !== accountId)
+  const availableCategories = categories.filter((category) => category.type === type)
   const fieldIdPrefix = props.mode === 'create' ? 'transaction' : 'edit-transaction'
 
   if (activeAccounts.length === 0) {
@@ -142,7 +149,7 @@ function TransactionForm(props: TransactionFormProps) {
           : {
               ...commonInput,
               type,
-              categoryId: props.mode === 'edit' ? props.transaction.categoryId : null,
+              categoryId: categoryId === '' ? null : categoryId,
             }
 
       if (props.mode === 'create') {
@@ -151,6 +158,7 @@ function TransactionForm(props: TransactionFormProps) {
         const initialAccountId = activeAccounts[0]?.id ?? ''
 
         setType('expense')
+        setCategoryId('')
         setAmount('')
         setDescription('')
         setAccountId(initialAccountId)
@@ -202,7 +210,12 @@ function TransactionForm(props: TransactionFormProps) {
             id={`${fieldIdPrefix}-type`}
             className={inputClassName}
             value={type}
-            onChange={(event) => setType(event.target.value as FormTransactionType)}
+            onChange={(event) => {
+              const nextType = event.target.value as FormTransactionType
+
+              setType(nextType)
+              setCategoryId('')
+            }}
             disabled={isSaving}
           >
             <option value="expense">Expense</option>
@@ -253,6 +266,39 @@ function TransactionForm(props: TransactionFormProps) {
             disabled={isSaving}
           />
         </div>
+
+        {type !== 'transfer' && (
+          <div>
+            <label
+              htmlFor={`${fieldIdPrefix}-category`}
+              className="block text-sm font-medium text-slate-700"
+            >
+              Category (optional)
+            </label>
+
+            <select
+              id={`${fieldIdPrefix}-category`}
+              className={inputClassName}
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+              disabled={isSaving}
+            >
+              <option value="">No category</option>
+
+              {availableCategories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+
+            {availableCategories.length === 0 && (
+              <p className="mt-1 text-xs text-slate-500">
+                No {type} categories available. You can create categories on the Categories page.
+              </p>
+            )}
+          </div>
+        )}
 
         <div>
           <label

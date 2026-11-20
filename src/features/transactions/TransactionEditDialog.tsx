@@ -1,5 +1,6 @@
 import type { Account } from '../../domain/accounts/account.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Category } from '../../domain/categories/category.types'
 import type { UpdateTransactionInput } from '../../services/transactions/transaction.service.types'
 
 import TransactionForm from './TransactionForm'
@@ -7,6 +8,7 @@ import TransactionForm from './TransactionForm'
 interface TransactionEditDialogProps {
   transaction: Transaction
   accounts: Account[]
+  categories: Category[]
   onUpdateTransaction: (id: string, input: UpdateTransactionInput) => Promise<Transaction>
   onClose: () => void
 }
@@ -14,6 +16,7 @@ interface TransactionEditDialogProps {
 function TransactionEditDialog({
   transaction,
   accounts,
+  categories,
   onUpdateTransaction,
   onClose,
 }: TransactionEditDialogProps) {
@@ -31,6 +34,7 @@ function TransactionEditDialog({
         <TransactionForm
           mode="edit"
           accounts={accounts}
+          categories={categories}
           transaction={transaction}
           onUpdateTransaction={onUpdateTransaction}
           onCancelEdit={onClose}
