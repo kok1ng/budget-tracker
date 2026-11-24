@@ -1,16 +1,54 @@
-import PageHeader from '../../components/ui/PageHeader'
+import type { Category } from '../../domain/categories/category.types'
+import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Budget } from '../../domain/budgets/budget.types'
+import type {
+  CreateBudgetInput,
+  UpdateBudgetInput,
+} from '../../services/budgets/budget.service.types'
+import type { CurrencyCode } from '../../domain/money/money.types'
 
-function BudgetsPage() {
+import PageHeader from '../../components/ui/PageHeader'
+import BudgetForm from './BudgetForm'
+import BudgetList from './BudgetList'
+
+interface BudgetsPageProps {
+  budgets: Budget[]
+  categories: Category[]
+  transactions: Transaction[]
+  currency: CurrencyCode | null
+  onCreateBudget: (input: CreateBudgetInput) => Promise<Budget>
+  onUpdateBudget: (id: string, input: UpdateBudgetInput) => Promise<Budget>
+  onDeleteBudget: (id: string) => Promise<void>
+}
+
+function BudgetsPage({
+  budgets,
+  categories,
+  transactions,
+  currency,
+  onCreateBudget,
+  onUpdateBudget,
+  onDeleteBudget,
+}: BudgetsPageProps) {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <PageHeader title="Budgets" description="Plan and monitor your spending limits." />
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="py-10 text-center">
-          <p className="text-sm text-slate-500">No budgets yet.</p>
-          <p className="mt-1 text-sm text-slate-400">Your budgets will appear here.</p>
-        </div>
-      </div>
+      <BudgetForm
+        categories={categories}
+        currency={currency}
+        budgets={budgets}
+        onCreateBudget={onCreateBudget}
+      />
+
+      <BudgetList
+        budgets={budgets}
+        categories={categories}
+        transactions={transactions}
+        currency={currency}
+        onUpdateBudget={onUpdateBudget}
+        onDeleteBudget={onDeleteBudget}
+      />
     </div>
   )
 }

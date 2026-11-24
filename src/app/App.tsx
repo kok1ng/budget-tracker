@@ -19,6 +19,7 @@ function App() {
     accounts,
     transactions,
     categories,
+    budgets,
     isLoading,
     loadError,
     createAccount,
@@ -32,6 +33,9 @@ function App() {
     createCategory,
     updateCategory,
     deleteCategory,
+    createBudget,
+    updateBudget,
+    deleteBudget,
   } = useFinancialData()
 
   function renderPage() {
@@ -78,7 +82,17 @@ function App() {
           />
         )
       case 'budgets':
-        return <BudgetsPage />
+        return (
+          <BudgetsPage
+            budgets={budgets}
+            categories={categories}
+            transactions={transactions}
+            currency={accounts[0]?.currency ?? null}
+            onCreateBudget={createBudget}
+            onUpdateBudget={updateBudget}
+            onDeleteBudget={deleteBudget}
+          />
+        )
       case 'settings':
         return <SettingsPage />
     }

@@ -8,6 +8,7 @@ const repositoryMocks = vi.hoisted(() => ({
   getAllAccounts: vi.fn(),
   getAllTransactions: vi.fn(),
   getAllCategories: vi.fn(),
+  getAllBudgets: vi.fn(),
 }))
 
 vi.mock('../services/storage/repositories/accounts/account.local-storage.repository', () => ({
@@ -31,6 +32,12 @@ vi.mock('../services/storage/repositories/categories/category.local-storage.repo
   },
 }))
 
+vi.mock('../services/storage/repositories/budgets/budget.local-storage.repository', () => ({
+  LocalStorageBudgetRepository: class {
+    getAll = repositoryMocks.getAllBudgets
+  },
+}))
+
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -38,6 +45,7 @@ describe('App', () => {
     repositoryMocks.getAllAccounts.mockResolvedValue([])
     repositoryMocks.getAllTransactions.mockResolvedValue([])
     repositoryMocks.getAllCategories.mockResolvedValue([])
+    repositoryMocks.getAllBudgets.mockResolvedValue([])
   })
 
   it('renders the Dashboard page by default', async () => {
@@ -54,6 +62,17 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Transactions' }))
 
     expect(await screen.findByRole('heading', { name: 'Transactions' })).toBeInTheDocument()
+  })
+
+  it('navigates to the Budgets page', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Budgets' }))
+
+    expect(await screen.findByRole('heading', { name: 'Budgets' })).toBeInTheDocument()
+    expect(screen.getByText('No budgets yet.')).toBeInTheDocument()
   })
 
   it('keeps navigation available after changing pages', async () => {
