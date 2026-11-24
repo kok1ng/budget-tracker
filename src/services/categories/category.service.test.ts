@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Category } from '../../domain/categories/category.types'
 import type { Transaction } from '../../domain/transactions/transaction.types'
+import type { Budget } from '../../domain/budgets/budget.types'
 
 import type { CategoryRepository } from '../storage/repositories/categories/category.repository'
 import type { TransactionRepository } from '../storage/repositories/transactions/transaction.repository'
+import type { BudgetRepository } from '../storage/repositories/budgets/budget.repository'
 
 import { CategoryOperationError } from './category-operation.errors'
 import { CategoryService } from './category.service'
@@ -21,6 +23,16 @@ const testTransaction = {
   categoryId: 'category-1',
 } as Transaction
 
+const testBudget: Budget = {
+  id: 'budget-1',
+  categoryId: 'category-1',
+  year: 2026,
+  month: 2,
+  limitMinor: 50000,
+  createdAt: '2026-02-01T10:00:00.000Z',
+  updatedAt: '2026-02-01T10:00:00.000Z',
+}
+
 describe('CategoryService', () => {
   let categories: Category[]
   let transactions: Transaction[]
@@ -29,9 +41,13 @@ describe('CategoryService', () => {
   let transactionRepository: TransactionRepository
   let service: CategoryService
 
+  let budgets: Budget[]
+  let budgetRepository: BudgetRepository
+
   beforeEach(() => {
     categories = []
     transactions = []
+    budgets = []
 
     categoryRepository = {
       getAll: vi.fn(async () => [...categories]),
@@ -58,8 +74,14 @@ describe('CategoryService', () => {
       save: vi.fn(),
       delete: vi.fn(),
     }
+    budgetRepository = {
+      getAll: vi.fn(async () => [...budgets]),
+      getById: vi.fn(async (id: string) => budgets.find((budget) => budget.id === id) ?? null),
+      save: vi.fn(),
+      delete: vi.fn(),
+    }
 
-    service = new CategoryService(categoryRepository, transactionRepository, {
+    service = new CategoryService(categoryRepository, transactionRepository, budgetRepository, {
       generateId: () => 'category-generated',
       getCurrentTimestamp: () => '2026-02-01T12:00:00.000Z',
     })
@@ -249,6 +271,22 @@ describe('CategoryService', () => {
         type: 'income',
       })
     })
+
+    it('rejects changing the type when a budget references the category', async () => {
+      categories = [testCategory]
+      budgets = [testBudget]
+
+      await expect(
+        service.updateCategory('category-1', {
+          name: 'Food',
+          type: 'income',
+        }),
+      ).rejects.toMatchObject({
+        code: 'CATEGORY_TYPE_IN_USE',
+      })
+
+      expect(categoryRepository.save).not.toHaveBeenCalled()
+    })
   })
 
   describe('deleteCategory', () => {
@@ -273,6 +311,17 @@ describe('CategoryService', () => {
       await expect(service.deleteCategory('category-1')).rejects.toMatchObject({
         name: 'CategoryOperationError',
         code: 'CATEGORY_HAS_TRANSACTIONS',
+      })
+
+      expect(categoryRepository.delete).not.toHaveBeenCalled()
+    })
+
+    it('rejects deleting a category referenced by a budget', async () => {
+      categories = [testCategory]
+      budgets = [testBudget]
+
+      await expect(service.deleteCategory('category-1')).rejects.toMatchObject({
+        code: 'CATEGORY_HAS_BUDGETS',
       })
 
       expect(categoryRepository.delete).not.toHaveBeenCalled()

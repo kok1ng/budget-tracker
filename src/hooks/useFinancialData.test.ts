@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Account } from '../domain/accounts/account.types'
 import type { Transaction } from '../domain/transactions/transaction.types'
 import type { Category } from '../domain/categories/category.types'
+import type { Budget } from '../domain/budgets/budget.types'
 
 import type { UpdateAccountInput } from '../services/accounts/account.service.types'
 
@@ -22,6 +23,10 @@ const repositoryMocks = vi.hoisted(() => ({
   categoryGetById: vi.fn(),
   categorySave: vi.fn(),
   categoryDelete: vi.fn(),
+  budgetGetAll: vi.fn(),
+  budgetGetById: vi.fn(),
+  budgetSave: vi.fn(),
+  budgetDelete: vi.fn(),
 }))
 
 vi.mock('../services/storage/repositories/accounts/account.local-storage.repository', () => ({
@@ -51,6 +56,15 @@ vi.mock('../services/storage/repositories/categories/category.local-storage.repo
     getById = repositoryMocks.categoryGetById
     save = repositoryMocks.categorySave
     delete = repositoryMocks.categoryDelete
+  },
+}))
+
+vi.mock('../services/storage/repositories/budgets/budget.local-storage.repository', () => ({
+  LocalStorageBudgetRepository: class {
+    getAll = repositoryMocks.budgetGetAll
+    getById = repositoryMocks.budgetGetById
+    save = repositoryMocks.budgetSave
+    delete = repositoryMocks.budgetDelete
   },
 }))
 
@@ -87,9 +101,20 @@ const testCategory: Category = {
   updatedAt: '2026-11-06T10:00:00.000Z',
 }
 
+const testBudget: Budget = {
+  id: 'budget-1',
+  categoryId: 'category-1',
+  year: 2026,
+  month: 11,
+  limitMinor: 50000,
+  createdAt: '2026-11-06T10:00:00.000Z',
+  updatedAt: '2026-11-06T10:00:00.000Z',
+}
+
 let accounts: Account[]
 let transactions: Transaction[]
 let categories: Category[]
+let budgets: Budget[]
 
 describe('useFinancialData', () => {
   beforeEach(() => {
@@ -98,6 +123,7 @@ describe('useFinancialData', () => {
     accounts = [{ ...testAccount }]
     transactions = [{ ...existingTransaction }]
     categories = [{ ...testCategory }]
+    budgets = [{ ...testBudget }]
 
     repositoryMocks.accountGetAll.mockImplementation(async () =>
       accounts.map((account) => ({ ...account })),
@@ -156,6 +182,28 @@ describe('useFinancialData', () => {
 
     repositoryMocks.categoryDelete.mockImplementation(async (id: string) => {
       categories = categories.filter((category) => category.id !== id)
+    })
+
+    repositoryMocks.budgetGetAll.mockImplementation(async () =>
+      budgets.map((budget) => ({ ...budget })),
+    )
+
+    repositoryMocks.budgetGetById.mockImplementation(
+      async (id: string) => budgets.find((budget) => budget.id === id) ?? null,
+    )
+
+    repositoryMocks.budgetSave.mockImplementation(async (budget: Budget) => {
+      const index = budgets.findIndex((item) => item.id === budget.id)
+
+      if (index === -1) {
+        budgets.push(budget)
+      } else {
+        budgets[index] = budget
+      }
+    })
+
+    repositoryMocks.budgetDelete.mockImplementation(async (id: string) => {
+      budgets = budgets.filter((budget) => budget.id !== id)
     })
   })
 
@@ -765,6 +813,8 @@ describe('useFinancialData', () => {
       expect(result.current.isLoading).toBe(false)
     })
 
+    budgets = []
+
     await act(async () => {
       await result.current.deleteCategory('category-1')
     })
@@ -859,5 +909,103 @@ describe('useFinancialData', () => {
     ).rejects.toThrow('Storage write failed')
 
     expect(result.current.categories).toEqual(initialCategories)
+  })
+
+  it('adds a budget to state after successful creation', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    let createdBudget: Budget | undefined
+
+    await act(async () => {
+      createdBudget = await result.current.createBudget({
+        categoryId: 'category-1',
+        year: 2026,
+        month: 12,
+        limitMinor: 75000,
+      })
+    })
+
+    expect(createdBudget).toMatchObject({
+      categoryId: 'category-1',
+      year: 2026,
+      month: 12,
+      limitMinor: 75000,
+    })
+
+    expect(result.current.budgets).toHaveLength(2)
+    expect(result.current.budgets[1]).toEqual(createdBudget)
+
+    expect(repositoryMocks.budgetSave).toHaveBeenCalledOnce()
+    expect(repositoryMocks.budgetSave).toHaveBeenCalledWith(createdBudget)
+  })
+
+  it('updates a budget in state after successful update', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    let updatedBudget: Budget | undefined
+
+    await act(async () => {
+      updatedBudget = await result.current.updateBudget('budget-1', {
+        limitMinor: 80000,
+      })
+    })
+
+    expect(updatedBudget).toMatchObject({
+      id: 'budget-1',
+      categoryId: 'category-1',
+      limitMinor: 80000,
+    })
+
+    expect(result.current.budgets).toHaveLength(1)
+    expect(result.current.budgets[0]).toEqual(updatedBudget)
+
+    expect(repositoryMocks.budgetSave).toHaveBeenCalledOnce()
+    expect(repositoryMocks.budgetSave).toHaveBeenCalledWith(updatedBudget)
+  })
+
+  it('removes a budget from state after successful deletion', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await act(async () => {
+      await result.current.deleteBudget('budget-1')
+    })
+
+    expect(result.current.budgets).toEqual([])
+    expect(repositoryMocks.budgetDelete).toHaveBeenCalledWith('budget-1')
+  })
+
+  it('keeps budget state unchanged when budget persistence fails', async () => {
+    const { result } = renderHook(() => useFinancialData())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    const initialBudgets = result.current.budgets
+
+    repositoryMocks.budgetSave.mockRejectedValueOnce(new Error('Storage write failed'))
+
+    await expect(
+      result.current.createBudget({
+        categoryId: 'category-1',
+        year: 2026,
+        month: 12,
+        limitMinor: 75000,
+      }),
+    ).rejects.toThrow('Storage write failed')
+
+    expect(result.current.budgets).toEqual(initialBudgets)
   })
 })

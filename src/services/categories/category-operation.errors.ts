@@ -3,6 +3,7 @@ export type CategoryOperationErrorCode =
   | 'INVALID_CATEGORY'
   | 'CATEGORY_NAME_ALREADY_EXISTS'
   | 'CATEGORY_HAS_TRANSACTIONS'
+  | 'CATEGORY_HAS_BUDGETS'
   | 'CATEGORY_TYPE_IN_USE'
 
 export class CategoryOperationError extends Error {

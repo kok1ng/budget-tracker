@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { Account } from '../domain/accounts/account.types'
 import type { Transaction } from '../domain/transactions/transaction.types'
 import type { Category } from '../domain/categories/category.types'
+import type { Budget } from '../domain/budgets/budget.types'
 
 import { LocalStorageAccountRepository } from '../services/storage/repositories/accounts/account.local-storage.repository'
 import type { AccountRepository } from '../services/storage/repositories/accounts/account.repository'
@@ -13,15 +14,15 @@ import type { TransactionRepository } from '../services/storage/repositories/tra
 import { LocalStorageCategoryRepository } from '../services/storage/repositories/categories/category.local-storage.repository'
 import type { CategoryRepository } from '../services/storage/repositories/categories/category.repository'
 
+import { LocalStorageBudgetRepository } from '../services/storage/repositories/budgets/budget.local-storage.repository'
+import type { BudgetRepository } from '../services/storage/repositories/budgets/budget.repository'
+
 import { StorageError } from '../services/storage/storage.types'
 
 import { TransactionService } from '../services/transactions/transaction.service'
-import type {
-  CreateTransactionInput,
-  UpdateTransactionInput,
-} from '../services/transactions/transaction.service.types'
 import { AccountService } from '../services/accounts/account.service'
 import { CategoryService } from '../services/categories/category.service'
+import { BudgetService } from '../services/budgets/budget.service'
 
 import type { UpdateAccountInput } from '../services/accounts/account.service.types'
 import type { CreateAccountInput } from '../domain/accounts/account.types'
@@ -29,11 +30,17 @@ import type {
   CreateCategoryInput,
   UpdateCategoryInput,
 } from '../services/categories/category.service.types'
+import type {
+  CreateTransactionInput,
+  UpdateTransactionInput,
+} from '../services/transactions/transaction.service.types'
+import type { CreateBudgetInput, UpdateBudgetInput } from '../services/budgets/budget.service.types'
 
 interface AppData {
   accounts: Account[]
   transactions: Transaction[]
   categories: Category[]
+  budgets: Budget[]
 }
 
 interface AppLoadError {
@@ -44,6 +51,7 @@ interface AppLoadError {
 const accountRepository: AccountRepository = new LocalStorageAccountRepository()
 const transactionRepository: TransactionRepository = new LocalStorageTransactionRepository()
 const categoryRepository: CategoryRepository = new LocalStorageCategoryRepository()
+const budgetRepository: BudgetRepository = new LocalStorageBudgetRepository()
 
 const transactionService = new TransactionService(
   accountRepository,
@@ -51,13 +59,19 @@ const transactionService = new TransactionService(
   categoryRepository,
 )
 const accountService = new AccountService(accountRepository, transactionRepository)
-const categoryService = new CategoryService(categoryRepository, transactionRepository)
+const categoryService = new CategoryService(
+  categoryRepository,
+  transactionRepository,
+  budgetRepository,
+)
+const budgetService = new BudgetService(budgetRepository, categoryRepository)
 
 export function useFinancialData() {
   const [appData, setAppData] = useState<AppData>({
     accounts: [],
     transactions: [],
     categories: [],
+    budgets: [],
   })
 
   const [isLoading, setIsLoading] = useState(true)
@@ -68,14 +82,15 @@ export function useFinancialData() {
 
     async function loadFinancialData() {
       try {
-        const [accounts, transactions, categories] = await Promise.all([
+        const [accounts, transactions, categories, budgets] = await Promise.all([
           accountRepository.getAll(),
           transactionRepository.getAll(),
           categoryService.getAllCategories(),
+          budgetService.getAllBudgets(),
         ])
 
         if (isCurrent) {
-          setAppData({ accounts, transactions, categories })
+          setAppData({ accounts, transactions, categories, budgets })
         }
       } catch (error) {
         if (isCurrent) {
@@ -196,6 +211,37 @@ export function useFinancialData() {
     }))
   }
 
+  async function createBudget(input: CreateBudgetInput): Promise<Budget> {
+    const budget = await budgetService.createBudget(input)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      budgets: [...currentData.budgets, budget],
+    }))
+
+    return budget
+  }
+
+  async function updateBudget(id: string, input: UpdateBudgetInput): Promise<Budget> {
+    const updatedBudget = await budgetService.updateBudget(id, input)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      budgets: currentData.budgets.map((budget) => (budget.id === id ? updatedBudget : budget)),
+    }))
+
+    return updatedBudget
+  }
+
+  async function deleteBudget(id: string): Promise<void> {
+    await budgetService.deleteBudget(id)
+
+    setAppData((currentData) => ({
+      ...currentData,
+      budgets: currentData.budgets.filter((budget) => budget.id !== id),
+    }))
+  }
+
   async function createTransaction(input: CreateTransactionInput) {
     const transaction = await transactionService.createTransaction(input)
 
@@ -231,6 +277,7 @@ export function useFinancialData() {
     accounts: appData.accounts,
     transactions: appData.transactions,
     categories: appData.categories,
+    budgets: appData.budgets,
     isLoading,
     loadError,
     createAccount,
@@ -244,5 +291,8 @@ export function useFinancialData() {
     createCategory,
     updateCategory,
     deleteCategory,
+    createBudget,
+    updateBudget,
+    deleteBudget,
   }
 }

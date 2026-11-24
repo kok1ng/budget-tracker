@@ -9,6 +9,7 @@ import type { Category } from '../../domain/categories/category.types'
 
 import type { CategoryRepository } from '../storage/repositories/categories/category.repository'
 import type { TransactionRepository } from '../storage/repositories/transactions/transaction.repository'
+import type { BudgetRepository } from '../storage/repositories/budgets/budget.repository'
 
 import { CategoryOperationError } from './category-operation.errors'
 import type {
@@ -25,6 +26,7 @@ function normalizeCategoryName(name: string): string {
 export class CategoryService {
   private readonly categoryRepository: CategoryRepository
   private readonly transactionRepository: TransactionRepository
+  private readonly budgetRepository: BudgetRepository
 
   private readonly generateId: () => string
   private readonly getCurrentTimestamp: () => string
@@ -32,10 +34,12 @@ export class CategoryService {
   constructor(
     categoryRepository: CategoryRepository,
     transactionRepository: TransactionRepository,
+    budgetRepository: BudgetRepository,
     options: Partial<CategoryServiceOptions> = {},
   ) {
     this.categoryRepository = categoryRepository
     this.transactionRepository = transactionRepository
+    this.budgetRepository = budgetRepository
 
     this.generateId = options.generateId ?? (() => crypto.randomUUID())
     this.getCurrentTimestamp = options.getCurrentTimestamp ?? (() => new Date().toISOString())
@@ -136,11 +140,16 @@ export class CategoryService {
 
     const hasTransactions = transactions.some((transaction) => transaction.categoryId === id)
 
-    if (updatedCategory.type !== existingCategory.type && hasTransactions) {
-      throw new CategoryOperationError(
-        'CATEGORY_TYPE_IN_USE',
-        'Cannot change the category type while transactions reference it.',
-      )
+    if (updatedCategory.type !== existingCategory.type) {
+      const budgets = await this.budgetRepository.getAll()
+      const hasBudgets = budgets.some((budget) => budget.categoryId === id)
+
+      if (hasTransactions || hasBudgets) {
+        throw new CategoryOperationError(
+          'CATEGORY_TYPE_IN_USE',
+          'Cannot change the category type while transactions or budgets reference it.',
+        )
+      }
     }
 
     updateCategoryOperation(categories, updatedCategory, transactions)
@@ -167,6 +176,17 @@ export class CategoryService {
       throw new CategoryOperationError(
         'CATEGORY_HAS_TRANSACTIONS',
         'Cannot delete a category with existing transactions.',
+      )
+    }
+
+    const budgets = await this.budgetRepository.getAll()
+
+    const hasBudgets = budgets.some((budget) => budget.categoryId === id)
+
+    if (hasBudgets) {
+      throw new CategoryOperationError(
+        'CATEGORY_HAS_BUDGETS',
+        'Cannot delete a category with existing budgets.',
       )
     }
 
