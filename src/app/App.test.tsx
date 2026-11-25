@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { StorageError } from '../services/storage/storage.types'
 
+import type { Category } from '../domain/categories/category.types'
+import type { Budget } from '../domain/budgets/budget.types'
+
 const repositoryMocks = vi.hoisted(() => ({
   getAllAccounts: vi.fn(),
   getAllTransactions: vi.fn(),
@@ -25,6 +28,24 @@ vi.mock(
     },
   }),
 )
+
+const testCategory: Category = {
+  id: 'category-1',
+  name: 'Groceries',
+  type: 'expense',
+  createdAt: '2026-11-06T10:00:00.000Z',
+  updatedAt: '2026-11-06T10:00:00.000Z',
+}
+
+const testBudget: Budget = {
+  id: 'budget-1',
+  categoryId: 'category-1',
+  year: 2026,
+  month: 11,
+  limitMinor: 50000,
+  createdAt: '2026-11-06T10:00:00.000Z',
+  updatedAt: '2026-11-06T10:00:00.000Z',
+}
 
 vi.mock('../services/storage/repositories/categories/category.local-storage.repository', () => ({
   LocalStorageCategoryRepository: class {
@@ -73,6 +94,21 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Budgets' })).toBeInTheDocument()
     expect(screen.getByText('No budgets yet.')).toBeInTheDocument()
+  })
+
+  it('displays loaded budgets on the Budgets page', async () => {
+    const user = userEvent.setup()
+
+    repositoryMocks.getAllCategories.mockResolvedValue([testCategory])
+    repositoryMocks.getAllBudgets.mockResolvedValue([testBudget])
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Budgets' }))
+
+    expect(await screen.findByRole('heading', { name: 'Groceries' })).toBeInTheDocument()
+    expect(screen.getByText('November 2026')).toBeInTheDocument()
+    expect(screen.getByText('500.00 (currency not set)')).toBeInTheDocument()
   })
 
   it('keeps navigation available after changing pages', async () => {

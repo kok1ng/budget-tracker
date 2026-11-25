@@ -207,7 +207,7 @@ describe('useFinancialData', () => {
     })
   })
 
-  it('loads accounts, transactions, and categories', async () => {
+  it('loads accounts, transactions, categories, and budgets', async () => {
     const { result } = renderHook(() => useFinancialData())
 
     await waitFor(() => {
@@ -217,6 +217,7 @@ describe('useFinancialData', () => {
     expect(result.current.accounts).toEqual([testAccount])
     expect(result.current.transactions).toEqual([existingTransaction])
     expect(result.current.categories).toEqual([testCategory])
+    expect(result.current.budgets).toEqual([testBudget])
     expect(result.current.loadError).toBeNull()
   })
 
